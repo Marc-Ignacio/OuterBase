@@ -1,5 +1,6 @@
-# Archivos específicos de Godot 4+
+# Godot 4+ specific ignores
 .godot/
+/android/
 
 # Archivos específicos de Godot 3 (por si acaso)
 .import/
@@ -19,4 +20,7 @@ export_presets.cfg
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Ignorar contextos de IA y configuraciones locales
+AGENTS.local.md
 
