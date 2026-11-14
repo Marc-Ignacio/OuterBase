@@ -1,0 +1,22 @@
+# Archivos específicos de Godot 4+
+.godot/
+
+# Archivos específicos de Godot 3 (por si acaso)
+.import/
+export.cfg
+export_presets.cfg
+
+# Traducciones importadas (se regeneran desde los CSV)
+*.translation
+
+# Archivos temporales y de compilación
+*.tmp
+*.bak
+*.swp
+*~
+
+# Archivos del sistema operativo
+.DS_Store
+Thumbs.db
+desktop.ini
+
