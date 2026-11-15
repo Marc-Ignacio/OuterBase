@@ -18,6 +18,11 @@ signal eat_requested()
 signal drink_requested()
 signal grow_requested()
 signal recycle_requested()
+signal filter_requested()
+signal train_requested()
+signal finish_day_requested()
+signal next_day_requested()
+signal retry_day_requested()
 
 # ==============================================================================
 # CONSTANTES DE ESTILO RETRO CRT
@@ -29,6 +34,9 @@ const COLOR_PHOSPHOR_BRIGHT: Color = Color(0.5, 1.0, 0.7, 1.0)     # #80ffb3
 const COLOR_ALERT_YELLOW: Color = Color(1.0, 0.85, 0.1, 1.0)        # #ffd91a
 const COLOR_ALERT_RED: Color = Color(1.0, 0.25, 0.25, 1.0)          # #ff4040
 const COLOR_CRT_BG: Color = Color(0.05, 0.15, 0.0, 1.0)             # #0d2700
+const NASA_EXERCISE := "https://www.nasa.gov/missions/station/iss-research/astronaut-exercise/"
+const NASA_OSD_684 := "https://osdr.nasa.gov/bio/repo/data/studies/OSD-684"
+const NASA_WATER := "https://www.nasa.gov/missions/station/iss-research/nasa-achieves-water-recovery-milestone-on-international-space-station/"
 
 # ==============================================================================
 # REFERENCIAS A NODOS
@@ -54,6 +62,16 @@ var _water_label: Label
 var _life_support_result: Label
 var _rations: int
 var _drinking_water: int
+var _filter_button: Button
+var _recycle_button: Button
+var _train_button: Button
+var _support_notes: AcceptDialog
+var _life_support_controls: VBoxContainer
+var _daily_objectives: Label
+var _day_result: Label
+var _finish_day_button: Button
+var _next_day_button: Button
+var _retry_day_button: Button
 
 # ==============================================================================
 # CICLO DE VIDA
@@ -80,9 +98,11 @@ func setup_life_support(grow_cost: float, recycle_cost: float) -> void:
 	body.add_child(section)
 	body.move_child(section, body.get_node("HSeparator2").get_index())
 	section.add_child(_create_styled_label("=== [ SOPORTE VITAL ] ===", COLOR_PHOSPHOR_BRIGHT, 12))
+	_life_support_controls = VBoxContainer.new()
+	section.add_child(_life_support_controls)
 	var columns := HBoxContainer.new()
 	columns.add_theme_constant_override("separation", 12)
-	section.add_child(columns)
+	_life_support_controls.add_child(columns)
 
 	var food := VBoxContainer.new()
 	food.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -98,10 +118,99 @@ func setup_life_support(grow_cost: float, recycle_cost: float) -> void:
 	_water_label = _create_styled_label("", COLOR_PHOSPHOR_GREEN, 12)
 	water.add_child(_water_label)
 	_hydration_bar = _add_needs_bar(water)
-	_add_supply_buttons(water, "Beber", drink_requested, "Reciclar agua", recycle_cost, recycle_requested)
+	_recycle_button = _add_supply_buttons(water, "Beber", drink_requested,
+		"Reciclar agua", recycle_cost, recycle_requested)
+
+	var maintenance := HBoxContainer.new()
+	_life_support_controls.add_child(maintenance)
+	_filter_button = _add_supply_button(maintenance, "Cambiar filtro", filter_requested.emit)
+	_train_button = _add_supply_button(maintenance, "Entrenar", train_requested.emit)
+	_add_supply_button(maintenance, "ⓘ Ficha NASA", _show_support_notes)
 
 	_life_support_result = _create_styled_label(" ", COLOR_PHOSPHOR_GREEN, 11)
-	section.add_child(_life_support_result)
+	_life_support_controls.add_child(_life_support_result)
+
+	_daily_objectives = _create_styled_label("", COLOR_PHOSPHOR_BRIGHT, 12)
+	section.add_child(_daily_objectives)
+	_day_result = _create_styled_label("", COLOR_PHOSPHOR_BRIGHT, 12)
+	_day_result.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	section.add_child(_day_result)
+	var day_actions := HBoxContainer.new()
+	section.add_child(day_actions)
+	_finish_day_button = _add_supply_button(day_actions, "Cerrar día", finish_day_requested.emit)
+	_next_day_button = _add_supply_button(day_actions, "Siguiente día", next_day_requested.emit)
+	_retry_day_button = _add_supply_button(day_actions, "Reintentar", retry_day_requested.emit)
+
+
+func update_daily_objectives(ate: bool, drank: bool, trained: bool, filter_ready: bool) -> void:
+	_daily_objectives.text = "🍴 Comer %s   💧 Beber %s   ↗ Ejercicio %s   ⚙ Filtro %s" % [
+		"✓" if ate else "○", "✓" if drank else "○",
+		"✓" if trained else "○", "✓" if filter_ready else "○",
+	]
+
+
+func show_open_day(day: int) -> void:
+	_finish_day_button.text = "Cerrar día %d" % day
+	_life_support_controls.show()
+	_life_support_result.text = " "
+	_day_result.hide()
+	_finish_day_button.show()
+	_next_day_button.hide()
+	_retry_day_button.hide()
+
+
+func show_closed_day(pending: PackedStringArray) -> void:
+	var success := pending.is_empty()
+	_life_support_controls.hide()
+	_finish_day_button.hide()
+	_day_result.text = "★ INSIGNIA · Día completado" if success else (
+		"Faltó %s. ¿Qué atenderías primero en el próximo intento?" % ", ".join(pending))
+	_day_result.modulate = COLOR_PHOSPHOR_BRIGHT if success else COLOR_ALERT_YELLOW
+	_day_result.show()
+	_next_day_button.visible = success
+	_retry_day_button.visible = not success
+
+
+func update_filter_status(needs_service: bool) -> void:
+	_filter_button.disabled = not needs_service
+	_filter_button.text = "⚠ Cambiar filtro (%.0f W)" % AstronautNeeds.FILTER_ENERGY_COST if needs_service else "✓ Filtro listo"
+	_filter_button.add_theme_color_override("font_color", COLOR_ALERT_YELLOW)
+	_recycle_button.disabled = needs_service
+	_recycle_button.tooltip_text = "Cambia el filtro antes de reciclar" if needs_service else ""
+
+
+func update_training_progress(repetitions: int) -> void:
+	var target := TaskManager.TRAINING_REPETITIONS
+	_train_button.disabled = repetitions >= target
+	if repetitions < 0:
+		_train_button.text = "↗ Entrenar (%.0f W)" % TaskManager.TRAINING_ENERGY_COST
+	elif repetitions < target:
+		_train_button.text = "↗ Repetición %d/%d" % [repetitions, target]
+	else:
+		_train_button.text = "✓ Entrenamiento %d/%d" % [repetitions, target]
+
+
+func _show_support_notes() -> void:
+	if not _support_notes:
+		_support_notes = AcceptDialog.new()
+		_support_notes.title = "Soporte vital · Ficha NASA"
+		_support_notes.ok_button_text = "Cerrar"
+		var notes := RichTextLabel.new()
+		notes.custom_minimum_size = Vector2(425, 0)
+		notes.fit_content = true
+		notes.bbcode_enabled = true
+		notes.text = (
+			"[b]Ejercicio[/b]\nEntrenar ayuda a cuidar los músculos y huesos en el espacio.\n"
+			+ "OSD-684 estudió tejido muscular humano en chips enviados a la ISS.\n"
+			+ "Los costos y la duración del entrenamiento son de balance del juego.\n"
+			+ "[url=%s]NASA Astronaut Exercise[/url] · [url=%s]NASA OSDR, OSD-684[/url]\n\n" % [NASA_EXERCISE, NASA_OSD_684]
+			+ "[b]Reciclaje de agua[/b]\nLa ISS recupera agua con su sistema de soporte vital.\n"
+			+ "[url=%s]NASA · Recuperación de agua en la ISS[/url]" % NASA_WATER
+		)
+		notes.meta_clicked.connect(func(url: Variant): OS.shell_open(str(url)))
+		_support_notes.add_child(notes)
+		add_child(_support_notes)
+	_support_notes.popup_centered()
 
 
 func _add_needs_bar(column: VBoxContainer) -> ProgressBar:
@@ -116,17 +225,17 @@ func _add_needs_bar(column: VBoxContainer) -> ProgressBar:
 
 
 func _add_supply_buttons(column: VBoxContainer, consume_text: String, consume: Signal,
-		produce_text: String, cost: float, produce: Signal) -> void:
+		produce_text: String, cost: float, produce: Signal) -> Button:
 	var row := HBoxContainer.new()
 	column.add_child(row)
-	_add_supply_button(row, consume_text, consume)
-	_add_supply_button(row, "%s (%.0f W)" % [produce_text, cost], produce)
+	_add_supply_button(row, consume_text, consume.emit)
+	return _add_supply_button(row, "%s (%.0f W)" % [produce_text, cost], produce.emit)
 
 
-func _add_supply_button(row: HBoxContainer, caption: String, requested: Signal) -> void:
+func _add_supply_button(row: HBoxContainer, caption: String, requested: Callable) -> Button:
 	var button := Button.new()
 	button.text = caption
-	button.custom_minimum_size.y = 26
+	button.custom_minimum_size.y = 32
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	button.add_theme_font_override("font", _terminal_font)
 	button.add_theme_font_size_override("font_size", 12)
@@ -139,8 +248,9 @@ func _add_supply_button(row: HBoxContainer, caption: String, requested: Signal) 
 		button.add_theme_stylebox_override(state, style)
 		button.add_theme_color_override("font_color" if state == "normal" else
 			"font_%s_color" % state, COLOR_PHOSPHOR_BRIGHT)
-	button.pressed.connect(func(): requested.emit())
+	button.pressed.connect(requested)
 	row.add_child(button)
+	return button
 
 
 func update_life_support_needs(satiety: float, hydration: float, _bone_density: float) -> void:
@@ -281,6 +391,7 @@ func _populate_tasks() -> void:
 		
 	# Limpiar elementos anteriores
 	for child in missions_vbox.get_children():
+		missions_vbox.remove_child(child)
 		child.queue_free()
 		
 	var tasks: Array[Dictionary] = []

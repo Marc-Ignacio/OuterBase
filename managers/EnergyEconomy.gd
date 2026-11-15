@@ -55,6 +55,10 @@ var current_energy_watts: float = 0.0
 # ==============================================================================
 
 func _ready() -> void:
+	reset_battery()
+
+
+func reset_battery() -> void:
 	current_energy_watts = clampf(initial_energy_watts, 0.0, max_energy_watts)
 	energy_updated.emit(current_energy_watts, max_energy_watts)
 

@@ -21,6 +21,8 @@ signal task_failed(task_id: StringName)
 
 ## Emitida para actualizar el temporizador de una tarea urgente a la UI.
 signal task_timer_updated(task_id: StringName, time_remaining: float, total_time: float)
+signal training_progress_changed(repetitions: int)
+signal training_result(message: String, success: bool)
 
 # ==============================================================================
 # DEFINICIÓN DE CLASE DE DATOS PARA TAREAS
@@ -64,6 +66,9 @@ class BaseTask extends RefCounted:
 const TASK_WATER_PLANTS: StringName = &"water_plants"
 const TASK_CLEAN_O2_FILTERS: StringName = &"clean_oxygen_filters"
 const TASK_DIVERT_SHIELDS: StringName = &"divert_power_to_shields"
+const TASK_DAILY_TRAINING: StringName = &"daily_training"
+const TRAINING_REPETITIONS := 3
+const TRAINING_ENERGY_COST := 30.0
 
 # ==============================================================================
 # PARÁMETROS DE GAME DESIGN (@export)
@@ -92,6 +97,8 @@ var _active_tasks: Dictionary = {}
 # Temporizadores de beneficios de mantenimiento
 var _greenhouse_buff_time: float = 0.0
 var _o2_buff_time: float = 0.0
+var _training_day := -1
+var _training_repetitions := -1 # -1 pendiente, 0 iniciado, 3 completado.
 
 # ==============================================================================
 # CICLO DE VIDA
@@ -158,6 +165,10 @@ func _create_initial_routine_tasks() -> void:
 		"Invernadero"
 	)
 	
+	_assign_filter_task()
+
+
+func _assign_filter_task() -> void:
 	assign_routine_task(
 		TASK_CLEAN_O2_FILTERS,
 		"Limpiar Filtros de Oxígeno",
@@ -177,6 +188,49 @@ func assign_routine_task(id: StringName, title: String, description: String, loc
 		
 	_active_tasks[id] = task
 	new_task_assigned.emit(id, false)
+
+
+func enable_daily_training() -> void:
+	if not DayManager.day_started.is_connected(_assign_daily_training):
+		DayManager.day_started.connect(_assign_daily_training)
+	_assign_daily_training(DayManager.current_day)
+	training_progress_changed.emit(_training_repetitions)
+
+
+func _assign_daily_training(day: int) -> void:
+	if day == _training_day:
+		return
+	_training_day = day
+	_training_repetitions = -1
+	_assign_filter_task()
+	assign_routine_task(TASK_DAILY_TRAINING, "Entrenamiento diario",
+		"Completa tres pulsaciones de ejercicio.", "Terminal")
+	training_progress_changed.emit(_training_repetitions)
+
+
+func reset_demo_tasks() -> void:
+	_active_tasks.clear()
+	_greenhouse_buff_time = 0.0
+	_o2_buff_time = 0.0
+	_training_day = -1
+	_create_initial_routine_tasks()
+
+
+func advance_daily_training() -> void:
+	if not is_task_active(TASK_DAILY_TRAINING) or _training_repetitions >= TRAINING_REPETITIONS:
+		return
+	if _training_repetitions == -1:
+		if not EnergyEconomy.can_afford_energy(TRAINING_ENERGY_COST) or not EnergyEconomy.spend_energy(TRAINING_ENERGY_COST, "Entrenar"):
+			training_result.emit("Falta energía", false)
+			return
+		_training_repetitions = 0
+		training_result.emit("Entrenamiento iniciado", true)
+	else:
+		_training_repetitions += 1
+		if _training_repetitions == TRAINING_REPETITIONS:
+			complete_task(TASK_DAILY_TRAINING)
+			training_result.emit("Entrenamiento completado", true)
+	training_progress_changed.emit(_training_repetitions)
 
 
 ## Tarea Crítica activada ante Llamarada Solar: Desviar Energía a Escudos.

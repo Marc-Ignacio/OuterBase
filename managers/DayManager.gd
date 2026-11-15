@@ -49,6 +49,7 @@ var current_day: int = 1
 var time_remaining: float = 0.0
 var is_running: bool = false
 var is_day_completed: bool = false
+var continuing_mission := false
 
 # ==============================================================================
 # CICLO DE VIDA
@@ -68,14 +69,15 @@ func _process(delta: float) -> void:
 	day_time_updated.emit(maxf(0.0, time_remaining), day_duration_seconds)
 	
 	if time_remaining <= 0.0:
-		_complete_day()
+		finish_day()
 
 # ==============================================================================
 # CONTROL DEL DÍA LUNAR
 # ==============================================================================
 
 ## Inicia el día lunar especificado (o el actual).
-func start_day(day_number: int = current_day) -> void:
+func start_day(day_number: int = current_day, continue_mission: bool = false) -> void:
+	continuing_mission = continue_mission
 	current_day = day_number
 	time_remaining = day_duration_seconds
 	is_running = true
@@ -101,6 +103,7 @@ func resume_day() -> void:
 
 ## Reinicia el día actual desde el tiempo total.
 func restart_day() -> void:
+	continuing_mission = false
 	time_remaining = day_duration_seconds
 	is_running = true
 	is_day_completed = false
@@ -118,8 +121,10 @@ func set_day_duration(seconds: float) -> void:
 # FINALIZACIÓN DEL DÍA
 # ==============================================================================
 
-func _complete_day() -> void:
-	time_remaining = 0.0
+func finish_day() -> void:
+	if is_day_completed:
+		return
+	time_remaining = maxf(0.0, time_remaining)
 	is_running = false
 	is_day_completed = true
 	

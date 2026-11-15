@@ -19,6 +19,8 @@ signal speed_multiplier_changed(new_multiplier: float)
 signal needs_updated(nutrition: float, hygiene: float, bone_density: float)
 signal supplies_updated(rations: int, drinking_water: int)
 signal supply_action_finished(message: String, success: bool)
+signal ration_eaten()
+signal water_drunk()
 
 ## Emitida cuando una necesidad entra en estado crítico (< 30%).
 signal need_critical(need_type: StringName, current_value: float)
@@ -39,6 +41,7 @@ const MISSION_TICK_SECONDS := 10.0
 const RECOVERY_POINTS := 30.0
 const GROW_ENERGY_COST := 50.0
 const RECYCLE_ENERGY_COST := 40.0
+const FILTER_ENERGY_COST := 25.0
 
 # ==============================================================================
 # PARÁMETROS DE GAME DESIGN (@export)
@@ -128,8 +131,17 @@ func enable_mission_life_support() -> void:
 	set_process(false)
 	_previous_remaining = DayManager.get_time_remaining()
 	DayManager.day_time_updated.connect(_on_mission_time_updated)
+	DayManager.day_started.connect(_on_mission_day_started)
+	reset_mission_supplies()
+
+
+func reset_mission_supplies() -> void:
+	_rations = 1
+	_drinking_water = 1
+	_pending_mission_seconds = 0.0
 	nutrition = 75.0
 	hygiene = 75.0
+	bone_density = clampf(initial_bone_density, 0.0, 100.0)
 	_publish_mission_needs()
 	supplies_updated.emit(_rations, _drinking_water)
 
@@ -150,6 +162,11 @@ func _on_mission_time_updated(remaining: float, _total: float) -> void:
 	_publish_mission_needs()
 
 
+func _on_mission_day_started(_day: int) -> void:
+	_previous_remaining = DayManager.get_time_remaining()
+	_pending_mission_seconds = 0.0
+
+
 func _publish_mission_needs() -> void:
 	_check_threshold_transitions()
 	_recalculate_speed_multiplier()
@@ -164,6 +181,7 @@ func eat_ration() -> void:
 	replenish_nutrition(RECOVERY_POINTS)
 	supplies_updated.emit(_rations, _drinking_water)
 	supply_action_finished.emit("Ración consumida", true)
+	ration_eaten.emit()
 
 
 func drink_water() -> void:
@@ -174,6 +192,7 @@ func drink_water() -> void:
 	replenish_hygiene(RECOVERY_POINTS)
 	supplies_updated.emit(_rations, _drinking_water)
 	supply_action_finished.emit("Agua consumida", true)
+	water_drunk.emit()
 
 
 func grow_ration() -> void:
@@ -185,11 +204,22 @@ func grow_ration() -> void:
 
 
 func recycle_water() -> void:
+	if TaskManager.is_task_active(TaskManager.TASK_CLEAN_O2_FILTERS):
+		supply_action_finished.emit("Cambia el filtro antes de reciclar", false)
+		return
 	if not _try_spend_energy(RECYCLE_ENERGY_COST, "Reciclar agua"):
 		return
 	_drinking_water += 1
 	supplies_updated.emit(_rations, _drinking_water)
 	supply_action_finished.emit("Agua reciclada", true)
+
+
+func change_filter() -> void:
+	if not TaskManager.is_task_active(TaskManager.TASK_CLEAN_O2_FILTERS):
+		return
+	if _try_spend_energy(FILTER_ENERGY_COST, "Cambiar filtro"):
+		if TaskManager.complete_task(TaskManager.TASK_CLEAN_O2_FILTERS):
+			supply_action_finished.emit("Filtro cambiado · Reciclaje disponible", true)
 
 
 func _try_spend_energy(cost: float, action: String) -> bool:

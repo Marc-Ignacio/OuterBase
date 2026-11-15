@@ -104,11 +104,8 @@ var greenhouse_efficiency_bonus: float = 1.0
 # ==============================================================================
 
 func _ready() -> void:
-	_resources[RES_ENERGY] = clampf(initial_energy, 0.0, max_energy)
-	_resources[RES_WATER] = clampf(initial_water, 0.0, max_water)
-	_resources[RES_FOOD] = clampf(initial_food, 0.0, max_food)
-	_resources[RES_OXYGEN] = clampf(initial_oxygen, 0.0, max_oxygen)
-	
+	reset_reserves()
+
 	_tick_timer = Timer.new()
 	_tick_timer.name = "ResourceTickTimer"
 	_tick_timer.wait_time = tick_rate
@@ -116,7 +113,18 @@ func _ready() -> void:
 	_tick_timer.autostart = true
 	_tick_timer.timeout.connect(_on_tick_timeout)
 	add_child(_tick_timer)
+
+
+func reset_reserves() -> void:
+	_resources[RES_ENERGY] = clampf(initial_energy, 0.0, max_energy)
+	_resources[RES_WATER] = clampf(initial_water, 0.0, max_water)
+	_resources[RES_FOOD] = clampf(initial_food, 0.0, max_food)
+	_resources[RES_OXYGEN] = clampf(initial_oxygen, 0.0, max_oxygen)
 	
+	for resource in _critical_state:
+		_critical_state[resource] = false
+	set_life_support_bonus(1.0)
+	set_greenhouse_bonus(1.0)
 	# Sincronización inicial para UI
 	_emit_all_resources()
 

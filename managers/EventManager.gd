@@ -199,6 +199,9 @@ func _conectar_con_day_manager() -> void:
 			dm.day_restarted.connect(_on_day_restarted)
 
 
+var _solar_day_offset := 0.0
+
+
 func _on_day_time_updated(time_remaining: float, total_time: float) -> void:
 	if not use_solar_calendar or not _calendario_solar:
 		return
@@ -208,11 +211,14 @@ func _on_day_time_updated(time_remaining: float, total_time: float) -> void:
 	if scale_to_day_duration and total_time > 0.0:
 		segundos_mision = (elapsed / total_time) * 600.0
 	
-	_ultimo_tiempo_mision = segundos_mision
-	_calendario_solar.avanzar_a(segundos_mision)
+	_ultimo_tiempo_mision = _solar_day_offset + segundos_mision
+	_calendario_solar.avanzar_a(_ultimo_tiempo_mision)
 
 
 func _on_day_started(_day_number: int) -> void:
+	if DayManager.continuing_mission:
+		_solar_day_offset = _ultimo_tiempo_mision
+		return
 	reiniciar_calendario()
 
 
@@ -222,6 +228,7 @@ func _on_day_restarted() -> void:
 
 ## Reinicia el calendario solar y limpia el estado del tablero de avisos.
 func reiniciar_calendario() -> void:
+	_solar_day_offset = 0.0
 	if _calendario_solar and _calendario_solar.has_method("reiniciar"):
 		_calendario_solar.reiniciar()
 	

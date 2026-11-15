@@ -27,6 +27,12 @@ signal terminal_toggled(is_open: bool)
 @onready var terminal_prompt: Control = $TerminalPrompt
 
 var _in_terminal_area: bool = false
+const DEMO_DAY_SECONDS := 110.0
+var _ate_today := false
+var _drank_today := false
+var _trained_today := false
+var _filter_pending := false
+var _day_succeeded := false
 
 # ==============================================================================
 # CICLO DE VIDA
@@ -53,6 +59,9 @@ func _ready() -> void:
 	_connect_terminal_events()
 	_connect_interaction_areas()
 	_connect_life_support()
+	DayManager.set_day_duration(DEMO_DAY_SECONDS)
+	DayManager.auto_advance_next_day = false
+	DayManager.start_day(1)
 
 
 func _connect_life_support() -> void:
@@ -67,7 +76,85 @@ func _connect_life_support() -> void:
 	needs.needs_updated.connect(terminal_screen.update_life_support_needs)
 	needs.supplies_updated.connect(terminal_screen.update_life_support_supplies)
 	needs.supply_action_finished.connect(terminal_screen.show_life_support_result)
+	terminal_screen.filter_requested.connect(needs.change_filter)
+	terminal_screen.train_requested.connect(TaskManager.advance_daily_training)
+	TaskManager.task_completed.connect(_on_life_support_task_changed)
+	TaskManager.new_task_assigned.connect(func(id: StringName, _urgent: bool):
+		_on_life_support_task_changed(id))
+	TaskManager.training_progress_changed.connect(terminal_screen.update_training_progress)
+	TaskManager.training_result.connect(terminal_screen.show_life_support_result)
+	terminal_screen.finish_day_requested.connect(DayManager.finish_day)
+	terminal_screen.next_day_requested.connect(_start_next_day)
+	terminal_screen.retry_day_requested.connect(_retry_demo)
+	DayManager.day_survived.connect(_show_day_result)
+	DayManager.day_started.connect(_reset_daily_objectives)
+	needs.ration_eaten.connect(func():
+		_ate_today = true
+		_update_daily_objectives())
+	needs.water_drunk.connect(func():
+		_drank_today = true
+		_update_daily_objectives())
+	_on_life_support_task_changed(TaskManager.TASK_CLEAN_O2_FILTERS)
+	TaskManager.enable_daily_training()
 	needs.enable_mission_life_support()
+
+
+func _on_life_support_task_changed(id: StringName) -> void:
+	if id == TaskManager.TASK_CLEAN_O2_FILTERS:
+		_filter_pending = TaskManager.is_task_active(id)
+		terminal_screen.update_filter_status(_filter_pending)
+		_update_daily_objectives()
+	elif id == TaskManager.TASK_DAILY_TRAINING and not TaskManager.is_task_active(id):
+		_trained_today = true
+		_update_daily_objectives()
+
+
+func _reset_daily_objectives(day: int) -> void:
+	_ate_today = false
+	_drank_today = false
+	_trained_today = false
+	_day_succeeded = false
+	terminal_screen.show_open_day(day)
+	_update_daily_objectives()
+
+
+func _update_daily_objectives() -> void:
+	terminal_screen.update_daily_objectives(_ate_today, _drank_today, _trained_today, not _filter_pending)
+
+
+func _show_day_result() -> void:
+	var pending := PackedStringArray()
+	if not _ate_today:
+		pending.append("comer una ración")
+	if not _drank_today:
+		pending.append("beber agua potable")
+	if not _trained_today:
+		pending.append("completar el ejercicio")
+	if _filter_pending:
+		pending.append("cambiar el filtro")
+	_day_succeeded = pending.is_empty()
+	terminal_screen.show_closed_day(pending)
+	open_terminal()
+
+
+func _start_next_day() -> void:
+	if DayManager.is_day_completed and _day_succeeded:
+		DayManager.start_day(DayManager.current_day + 1, true)
+
+
+func _retry_demo() -> void:
+	if not DayManager.is_day_completed or _day_succeeded:
+		return
+	TaskManager.reset_demo_tasks()
+	ResourceManager.reset_reserves()
+	EnergyEconomy.reset_battery()
+	BaseFSM.change_state(BaseFSM.BaseState.NORMAL)
+	player.enter_shelter()
+	player.needs_component.reset_mission_supplies()
+	close_terminal()
+	player.global_position = spawn_marker.global_position
+	player.reset_physics_interpolation()
+	DayManager.start_day(1)
 
 
 func _connect_terminal_events() -> void:
