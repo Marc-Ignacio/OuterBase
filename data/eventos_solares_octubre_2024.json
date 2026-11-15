@@ -1,0 +1,77 @@
+[
+  {
+	"id_fuente": "2024-10-03T12:08:00-FLR-001",
+	"tipo": "FLR",
+	"fecha_utc": "2024-10-03T12:08Z",
+	"fuente": "NASA CCMC DONKI",
+	"url_fuente": "https://ccmc.gsfc.nasa.gov/DONKI/view/FLR/33693/-1",
+	"clase": "X9.0",
+	"instrumentos": ["GOES-P: EXIS 1.0-8.0"],
+	"pico": {"fecha_utc": "2024-10-03T12:18Z"},
+	"avisos": [
+	  {
+		"id_fuente": "20241003-AL-001",
+		"fecha_utc": "2024-10-03T12:19Z",
+		"url_fuente": "https://ccmc.gsfc.nasa.gov/DONKI/view/Alert/33694/1"
+	  },
+	  {
+		"id_fuente": "20241003-AL-002",
+		"fecha_utc": "2024-10-03T12:31:54Z",
+		"url_fuente": "https://kauai.ccmc.gsfc.nasa.gov/DONKI/view/Alert/33695/1"
+	  }
+	],
+	"procedencia": {
+	  "clase": "classType",
+	  "instrumentos": "instruments[].displayName",
+	  "pico": "peakTime",
+	  "avisos": "sentNotifications y Message Issue Date del aviso 20241003-AL-002"
+	}
+  },
+  {
+	"id_fuente": "2024-10-09T05:05:00-SEP-001",
+	"tipo": "SEP",
+	"fecha_utc": "2024-10-09T05:05Z",
+	"fuente": "NASA CCMC DONKI",
+	"url_fuente": "https://ccmc.gsfc.nasa.gov/DONKI/view/SEP/33866/-1",
+	"instrumentos": ["GOES-P: SEISS >10 MeV"],
+	"canales_energia": [">10 MeV"],
+	"avisos": [
+	  {
+		"id_fuente": "20241009-AL-003",
+		"fecha_utc": "2024-10-09T05:13Z",
+		"url_fuente": "https://ccmc.gsfc.nasa.gov/DONKI/view/Alert/33867/1"
+	  }
+	],
+	"pico": {
+	  "fecha_utc": "2024-10-10T15:15Z",
+	  "fuente": "NOAA SWPC",
+	  "url_fuente": "https://www.ngdc.noaa.gov/stp/space-weather/interplanetary-data/solar-proton-events/archive/SEP%20page%20code.20241115.html",
+	  "canales_energia": [">10 MeV"],
+	  "flujo_pfu": 1810
+	},
+	"procedencia": {
+	  "instrumentos": "instruments[].displayName",
+	  "canales_energia": "instruments[].displayName",
+	  "avisos": "sentNotifications[].messageIssueTime",
+	  "pico": "Fila NOAA del episodio con inicio 2024-10-09T05:05Z, columnas Maximum"
+	}
+  },
+  {
+	"id_fuente": "NOAA-SWPC-2024-10-26T19:10Z",
+	"tipo": "SEP",
+	"fecha_utc": "2024-10-26T19:10Z",
+	"fuente": "NOAA SWPC",
+	"url_fuente": "https://www.ngdc.noaa.gov/stp/space-weather/interplanetary-data/solar-proton-events/archive/SEP%20page%20code.20241115.html",
+	"canales_energia": [">10 MeV"],
+	"pico": {
+	  "fecha_utc": "2024-10-28T03:50Z",
+	  "fuente": "NOAA SWPC",
+	  "url_fuente": "https://www.ngdc.noaa.gov/stp/space-weather/interplanetary-data/solar-proton-events/archive/SEP%20page%20code.20241115.html",
+	  "flujo_pfu": 364
+	},
+	"procedencia": {
+	  "id_fuente": "Clave local basada en la fecha de inicio de la fila NOAA",
+	  "pico": "Fila NOAA del episodio con inicio 2024-10-26T19:10Z, columnas Maximum"
+	}
+  }
+]
