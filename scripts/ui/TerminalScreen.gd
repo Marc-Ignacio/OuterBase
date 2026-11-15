@@ -18,6 +18,7 @@ signal eat_requested()
 signal drink_requested()
 signal recycle_requested()
 signal train_requested()
+signal report_requested()
 signal finish_day_requested()
 signal next_day_requested()
 signal retry_day_requested()
@@ -65,6 +66,8 @@ var _rations: int
 var _drinking_water: int
 var _water_tank_status: Label
 var _oxygen_tank_status: Label
+var _communications_status: Label
+var _report_button: Button
 var _recycle_button: Button
 var _train_button: Button
 var _support_notes: AcceptDialog
@@ -143,6 +146,7 @@ func setup_life_support(recycle_cost: float) -> void:
 	var maintenance := HBoxContainer.new()
 	_life_support_controls.add_child(maintenance)
 	_train_button = _add_supply_button(maintenance, "Entrenar", train_requested.emit)
+	_report_button = _add_supply_button(maintenance, "Enviar reporte", report_requested.emit)
 	_add_supply_button(maintenance, "ⓘ Ficha NASA", _show_support_notes)
 
 	var tanks := HBoxContainer.new()
@@ -153,6 +157,9 @@ func setup_life_support(recycle_cost: float) -> void:
 	_oxygen_tank_status = _create_styled_label("", COLOR_PHOSPHOR_GREEN, 11)
 	_oxygen_tank_status.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	tanks.add_child(_oxygen_tank_status)
+	_communications_status = _create_styled_label("", COLOR_PHOSPHOR_GREEN, 11)
+	_communications_status.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	tanks.add_child(_communications_status)
 
 	_life_support_result = _create_styled_label(" ", COLOR_PHOSPHOR_GREEN, 11)
 	_life_support_controls.add_child(_life_support_result)
@@ -213,6 +220,13 @@ func update_oxygen_tank(active_leak: bool, amount: float) -> void:
 	_oxygen_tank_status.text = "%s O₂ · %s · %.0f u" % [
 		"⚠" if active_leak else "◈", "Fuga" if active_leak else "Estable", amount]
 	_oxygen_tank_status.modulate = COLOR_ALERT_YELLOW if active_leak else COLOR_PHOSPHOR_GREEN
+
+
+func update_communications(status: String, can_report: bool) -> void:
+	_communications_status.text = "COM · %s" % status
+	_communications_status.modulate = COLOR_PHOSPHOR_GREEN if can_report else COLOR_ALERT_YELLOW
+	_report_button.disabled = not can_report
+	_report_button.tooltip_text = "" if can_report else status
 
 
 func update_crop_status(status: String) -> void:

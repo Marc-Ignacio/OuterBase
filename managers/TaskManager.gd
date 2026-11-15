@@ -67,6 +67,7 @@ const TASK_WATER_PLANTS: StringName = &"water_plants"
 const TASK_CLEAN_O2_FILTERS: StringName = &"clean_oxygen_filters"
 const TASK_DIVERT_SHIELDS: StringName = &"divert_power_to_shields"
 const TASK_DAILY_TRAINING: StringName = &"daily_training"
+const TASK_REPAIR_COMMUNICATIONS: StringName = &"repair_communications"
 const TRAINING_REPETITIONS := 3
 const TRAINING_ENERGY_COST := 30.0
 

@@ -26,11 +26,16 @@ signal terminal_toggled(is_open: bool)
 @onready var terminal_screen: TerminalScreen = $TerminalScreen
 @onready var terminal_prompt: Label = $TerminalPrompt
 @onready var greenhouse: Node2D = $Greenhouse
+@onready var communications: Node2D = $Communications
+
+## Segundos de calendario por segundo de misión en la demo.
+@export_range(0.1, 10.0, 0.01) var demo_solar_calendar_rate := 3.67
 
 const DEVICE_TERMINAL := "BottomWallCommandCenter"
 const DEVICE_GREENHOUSE := "Invernadero"
 const DEVICE_WATER := "Tanque H₂O"
 const DEVICE_OXYGEN := "Tanque O₂"
+const DEVICE_COMMUNICATIONS := "Panel COM"
 const DEMO_TIME_MULTIPLIER := 2.0
 const WATER_LEAK_SECOND := 25.0 * DEMO_TIME_MULTIPLIER
 const DEVICE_LABELS := {
@@ -38,6 +43,7 @@ const DEVICE_LABELS := {
 	DEVICE_GREENHOUSE: "Invernadero",
 	DEVICE_WATER: DEVICE_WATER,
 	DEVICE_OXYGEN: DEVICE_OXYGEN,
+	DEVICE_COMMUNICATIONS: DEVICE_COMMUNICATIONS,
 }
 
 var _in_terminal_area: bool = false
@@ -77,8 +83,12 @@ func _ready() -> void:
 	_connect_terminal_events()
 	_connect_interaction_areas()
 	_connect_life_support()
+	communications.status_changed.connect(terminal_screen.update_communications)
+	communications.report_result.connect(terminal_screen.show_life_support_result)
+	terminal_screen.report_requested.connect(communications.send_report)
+	communications.publish_status()
 	DayManager.set_day_duration(DEMO_DAY_SECONDS)
-	EventManager.solar_calendar_rate = 1.0 / DEMO_TIME_MULTIPLIER
+	EventManager.solar_calendar_rate = demo_solar_calendar_rate
 	DayManager.auto_advance_next_day = false
 	DayManager.start_day(1)
 
@@ -212,6 +222,7 @@ func _connect_interaction_areas() -> void:
 		["ReactoresArea", "Módulo de Reactores"],
 		["WaterTankArea", DEVICE_WATER],
 		["OxygenTankArea", DEVICE_OXYGEN],
+		["CommunicationsArea", DEVICE_COMMUNICATIONS],
 		["AirlockArea", "Esclusa"],
 		["BottomWallCommandCenter", "BottomWallCommandCenter"]
 	]
@@ -273,6 +284,8 @@ func _process(_delta: float) -> void:
 			message = "⚠ E · Reparar H₂O (%s)" % EnergyEconomy.format_sols(ceili(AstronautNeeds.FILTER_ENERGY_COST))
 		elif device == DEVICE_OXYGEN and ResourceManager.has_oxygen_leak():
 			message = "⚠ E · Reparar O₂ (%s)" % EnergyEconomy.format_sols(ceili(AstronautNeeds.FILTER_ENERGY_COST))
+		elif device == DEVICE_COMMUNICATIONS:
+			message = communications.interaction_caption()
 		if not _prompt_feedback.is_empty():
 			message += "\n" + _prompt_feedback
 		terminal_prompt.text = message
@@ -296,6 +309,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			_prompt_feedback = player.needs_component.repair_water_tank()
 		DEVICE_OXYGEN:
 			_prompt_feedback = player.needs_component.inspect_or_repair_oxygen_tank()
+		DEVICE_COMMUNICATIONS:
+			_prompt_feedback = communications.interact()
 		_:
 			return
 	station_interacted.emit(device)

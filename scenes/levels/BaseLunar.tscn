@@ -10,6 +10,7 @@
 [ext_resource type="Texture2D" uid="uid://bhl8fi758sjbj" path="res://assets/sprites/OxygenTank.png" id="8_ic1b4"]
 [ext_resource type="PackedScene" path="res://scenes/ui/TerminalScreen.tscn" id="9_terminal"]
 [ext_resource type="PackedScene" path="res://scenes/levels/Greenhouse.tscn" id="10_greenhouse"]
+[ext_resource type="PackedScene" path="res://scenes/levels/Communications.tscn" id="13_communications"]
 [ext_resource type="Texture2D" path="res://assets/sprites/moon2.png" id="11_moon"]
 [ext_resource type="Shader" path="res://assets/sprites/lunar_exterior_key.gdshader" id="12_exterior"]
 
@@ -181,6 +182,9 @@ color = Color(0.21176471, 0.19607843, 0.34901962, 1)
 
 [node name="Greenhouse" parent="." instance=ExtResource("10_greenhouse")]
 position = Vector2(84, 120)
+
+[node name="Communications" parent="." instance=ExtResource("13_communications")]
+position = Vector2(373, 68)
 
 [node name="WallsStaticBody" type="StaticBody2D" parent="." unique_id=336970959]
 
@@ -373,3 +377,9 @@ text = "[E] TERMINAL"
 horizontal_alignment = 1
 
 [node name="TerminalScreen" parent="." instance=ExtResource("9_terminal")]
+
+[node name="CommunicationsArea" type="Area2D" parent="InteractionZones"]
+position = Vector2(373, 86)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="InteractionZones/CommunicationsArea"]
+shape = SubResource("RectangleShape2D_soporte_vital")
