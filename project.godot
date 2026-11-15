@@ -14,6 +14,13 @@ config/name="OuterBase"
 config/features=PackedStringArray("4.7", "GL Compatibility")
 config/icon="res://icon.svg"
 
+[autoload]
+
+BaseFSM="*res://managers/BaseFSM.gd"
+ResourceManager="*res://managers/ResourceManager.gd"
+EventManager="*res://managers/EventManager.gd"
+TaskManager="*res://managers/TaskManager.gd"
+
 [display]
 
 window/stretch/mode="canvas_items"
