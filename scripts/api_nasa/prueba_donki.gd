@@ -1,9 +1,6 @@
 extends Node
 
-const ARCHIVO := "res://data/eventos_solares_octubre_2024.json"
-const INICIO := "2024-10-01T00:00:00Z"
-const FIN := "2024-11-01T00:00:00Z"
-const DURACION_PARTIDA := 600.0
+const LineaTiempo := preload("res://scripts/api_nasa/linea_tiempo_solar.gd")
 const X9 := "2024-10-03T12:08:00-FLR-001"
 const AVISO_X9 := "20241003-AL-002"
 const SEP_GOES := "2024-10-09T05:05:00-SEP-001"
@@ -21,18 +18,7 @@ func _ready() -> void:
 
 func _probar_archivo() -> void:
 	print("=== ARCHIVO LOCAL ===")
-	var archivo := FileAccess.open(ARCHIVO, FileAccess.READ)
-	if archivo == null:
-		push_error("ARCHIVO LOCAL: %s" % error_string(FileAccess.get_open_error()))
-		return
-	var json := JSON.new()
-	if json.parse(archivo.get_as_text()) != OK or not json.data is Array:
-		push_error("ARCHIVO LOCAL: se esperaba una lista JSON válida")
-		return
-	var eventos: Array[Dictionary] = []
-	for fila in json.data:
-		if fila is Dictionary:
-			eventos.append(fila)
+	var eventos := LineaTiempo.leer_seleccion_local()
 	print("ARCHIVO LOCAL: %d registros" % eventos.size())
 	_imprimir_muestra(eventos, 3)
 	_imprimir_linea_de_tiempo("ARCHIVO LOCAL", eventos)
@@ -80,45 +66,14 @@ func _imprimir_muestra(eventos: Array[Dictionary], cantidad: int) -> void:
 
 
 func _imprimir_linea_de_tiempo(origen: String, eventos: Array[Dictionary]) -> void:
-	var hitos: Array[Dictionary] = []
-	for evento in eventos:
-		_agregar_hito(hitos, evento, evento, "inicio")
-		if evento.has("pico"):
-			_agregar_hito(hitos, evento, evento.pico, "pico")
-		for aviso in evento.get("avisos", []):
-			_agregar_hito(hitos, evento, aviso, "aviso publicado")
-	hitos.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return a.unix < b.unix)
+	var hitos := LineaTiempo.construir_hitos(eventos)
 	print("--- %s | línea de tiempo (%d hitos) ---" % [origen, hitos.size()])
-	var inicio := _unix_utc(INICIO)
-	var fin := _unix_utc(FIN)
 	for hito in hitos:
-		var segundos: float = DURACION_PARTIDA * float(hito.unix - inicio) / (fin - inicio)
+		var detalle := ""
+		if hito.tipo_hito == "aviso_publicado":
+			detalle = " | %s" % hito.id_fuente
+		if hito.has("flujo_pfu"):
+			detalle = " | %s pfu (%s)" % [hito.flujo_pfu, hito.fuente]
 		print("%9.3f s | %s | %s | %s | %s%s" % [
-			segundos, hito.fecha_utc, hito.tipo, hito.id_episodio, hito.fase, hito.detalle])
-
-
-func _agregar_hito(hitos: Array[Dictionary], episodio: Dictionary, datos: Dictionary,
-		fase: String) -> void:
-	var fecha: Variant = datos.get("fecha_utc")
-	if not fecha is String or fecha.is_empty():
-		return
-	var detalle := ""
-	if fase == "aviso publicado":
-		detalle = " | %s" % datos.id_fuente
-	if datos.has("flujo_pfu"):
-		detalle = " | %s pfu (%s)" % [datos.flujo_pfu, datos.fuente]
-	hitos.append({
-		"unix": _unix_utc(fecha),
-		"fecha_utc": fecha,
-		"id_episodio": episodio.id_fuente,
-		"tipo": episodio.tipo,
-		"fase": fase,
-		"detalle": detalle,
-	})
-
-
-func _unix_utc(fecha: String) -> int:
-	var fecha_sin_z := fecha.trim_suffix("Z")
-	if fecha_sin_z.length() == 16:
-		fecha_sin_z += ":00"
-	return Time.get_unix_time_from_datetime_string(fecha_sin_z)
+			hito.segundos_mision, hito.fecha_utc, hito.tipo, hito.id_episodio,
+			hito.tipo_hito.replace("_", " "), detalle])

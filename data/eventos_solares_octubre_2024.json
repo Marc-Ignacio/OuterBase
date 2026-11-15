@@ -21,10 +21,27 @@
 	  }
 	],
 	"procedencia": {
+	  "fecha_utc": "beginTime",
 	  "clase": "classType",
 	  "instrumentos": "instruments[].displayName",
 	  "pico": "peakTime",
 	  "avisos": "sentNotifications y Message Issue Date del aviso 20241003-AL-002"
+	}
+  },
+  {
+	"id_fuente": "2024-10-09T03:50:00-SEP-001",
+	"id_episodio": "2024-10-09T05:05:00-SEP-001",
+	"tipo": "SEP",
+	"tipo_hito": "deteccion",
+	"fecha_utc": "2024-10-09T03:50Z",
+	"fuente": "NASA CCMC DONKI",
+	"url_fuente": "https://ccmc.gsfc.nasa.gov/DONKI/view/SEP/33868/-1",
+	"instrumentos": ["GOES-P: SEISS >100 MeV"],
+	"canales_energia": [">100 MeV"],
+	"procedencia": {
+	  "fecha_utc": "eventTime",
+	  "canales_energia": "instruments[].displayName",
+	  "id_episodio": "Ambas detecciones DONKI enlazan 2024-10-09T01:25:00-FLR-001 y 2024-10-09T02:12:00-CME-001"
 	}
   },
   {
@@ -42,14 +59,30 @@
 		"url_fuente": "https://ccmc.gsfc.nasa.gov/DONKI/view/Alert/33867/1"
 	  }
 	],
+	"hitos_adicionales": [
+	  {
+		"id_fuente": "NOAA-SWPC-PRF2563-2024-10-09T12:40Z",
+		"tipo_hito": "umbral",
+		"fecha_utc": "2024-10-09T12:40Z",
+		"fuente": "NOAA SWPC",
+		"url_fuente": "https://www.ngdc.noaa.gov/stp/space-weather/swpc-products/weekly_reports/PRFs_of_SGD/2024/10/prf2563.pdf",
+		"nivel": "S3",
+		"canales_energia": [">10 MeV"],
+		"umbral_pfu": 1000,
+		"procedencia": "PRF 2563, Space Weather Highlights y tabla de alertas. Clave local basada en el boletín y la hora del cruce."
+	  }
+	],
 	"pico": {
+	  "id_fuente": "NOAA-SWPC-2024-10-09T05:05Z",
 	  "fecha_utc": "2024-10-10T15:15Z",
 	  "fuente": "NOAA SWPC",
 	  "url_fuente": "https://www.ngdc.noaa.gov/stp/space-weather/interplanetary-data/solar-proton-events/archive/SEP%20page%20code.20241115.html",
 	  "canales_energia": [">10 MeV"],
-	  "flujo_pfu": 1810
+	  "flujo_pfu": 1810,
+	  "procedencia": "Fila NOAA del episodio con inicio 2024-10-09T05:05Z, columnas Maximum. Clave local basada en el inicio de la fila."
 	},
 	"procedencia": {
+	  "fecha_utc": "eventTime",
 	  "instrumentos": "instruments[].displayName",
 	  "canales_energia": "instruments[].displayName",
 	  "avisos": "sentNotifications[].messageIssueTime",
@@ -71,6 +104,8 @@
 	},
 	"procedencia": {
 	  "id_fuente": "Clave local basada en la fecha de inicio de la fila NOAA",
+	  "fecha_utc": "Columna Start de la fila NOAA",
+	  "canales_energia": "Nota de la tabla NOAA sobre el flujo integral de protones >10 MeV",
 	  "pico": "Fila NOAA del episodio con inicio 2024-10-26T19:10Z, columnas Maximum"
 	}
   }
