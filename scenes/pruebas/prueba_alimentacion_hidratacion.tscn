@@ -1,0 +1,138 @@
+[gd_scene format=3 uid="uid://ddk47m3l1mawg"]
+
+[ext_resource type="Script" uid="uid://bnomw6ml5id7k" path="res://scenes/pruebas/prueba_alimentacion_hidratacion_ui.gd" id="1_4oryx"]
+
+[node name="PruebaAlimentacionHidratacion" type="Node2D" unique_id=1894283893]
+
+[node name="NeedsPrototype" type="ColorRect" parent="." unique_id=1068223302]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.043137256, 0.078431375, 0.13333334, 1)
+script = ExtResource("1_4oryx")
+
+[node name="Center" type="CenterContainer" parent="NeedsPrototype" unique_id=2118357458]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="Panel" type="PanelContainer" parent="NeedsPrototype/Center" unique_id=1993801558]
+layout_mode = 2
+
+[node name="Padding" type="MarginContainer" parent="NeedsPrototype/Center/Panel" unique_id=1439792731]
+layout_mode = 2
+theme_override_constants/margin_left = 26
+theme_override_constants/margin_top = 26
+theme_override_constants/margin_right = 26
+theme_override_constants/margin_bottom = 26
+
+[node name="Content" type="VBoxContainer" parent="NeedsPrototype/Center/Panel/Padding" unique_id=180224212]
+custom_minimum_size = Vector2(520, 0)
+layout_mode = 2
+theme_override_constants/separation = 19
+
+[node name="Title" type="Label" parent="NeedsPrototype/Center/Panel/Padding/Content" unique_id=336344312]
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "Alimentación e hidratación"
+
+[node name="Satiety" type="VBoxContainer" parent="NeedsPrototype/Center/Panel/Padding/Content" unique_id=1446589557]
+layout_mode = 2
+theme_override_constants/separation = 7
+
+[node name="Heading" type="HBoxContainer" parent="NeedsPrototype/Center/Panel/Padding/Content/Satiety" unique_id=924482178]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Caption" type="Label" parent="NeedsPrototype/Center/Panel/Padding/Content/Satiety/Heading" unique_id=792745895]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "🍴  Saciedad"
+
+[node name="Value" type="Label" parent="NeedsPrototype/Center/Panel/Padding/Content/Satiety/Heading" unique_id=2024011203]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 20
+text = "75 / 100"
+horizontal_alignment = 2
+
+[node name="Bar" type="ProgressBar" parent="NeedsPrototype/Center/Panel/Padding/Content/Satiety" unique_id=1101471760]
+custom_minimum_size = Vector2(0, 22)
+layout_mode = 2
+value = 75.0
+show_percentage = false
+
+[node name="Hydration" type="VBoxContainer" parent="NeedsPrototype/Center/Panel/Padding/Content" unique_id=1542910952]
+layout_mode = 2
+theme_override_constants/separation = 7
+
+[node name="Heading" type="HBoxContainer" parent="NeedsPrototype/Center/Panel/Padding/Content/Hydration" unique_id=735220285]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Caption" type="Label" parent="NeedsPrototype/Center/Panel/Padding/Content/Hydration/Heading" unique_id=1072576148]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "💧  Hidratación"
+
+[node name="Value" type="Label" parent="NeedsPrototype/Center/Panel/Padding/Content/Hydration/Heading" unique_id=252963622]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 20
+text = "75 / 100"
+horizontal_alignment = 2
+
+[node name="Bar" type="ProgressBar" parent="NeedsPrototype/Center/Panel/Padding/Content/Hydration" unique_id=1686176431]
+custom_minimum_size = Vector2(0, 22)
+layout_mode = 2
+value = 75.0
+show_percentage = false
+
+[node name="Status" type="Label" parent="NeedsPrototype/Center/Panel/Padding/Content" unique_id=91522910]
+layout_mode = 2
+theme_override_font_sizes/font_size = 23
+text = "Listo para trabajar"
+
+[node name="Actions" type="HBoxContainer" parent="NeedsPrototype/Center/Panel/Padding/Content" unique_id=1920107622]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Advance" type="Button" parent="NeedsPrototype/Center/Panel/Padding/Content/Actions" unique_id=1124049010]
+custom_minimum_size = Vector2(0, 56)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 19
+text = "Avanzar tiempo"
+
+[node name="Eat" type="Button" parent="NeedsPrototype/Center/Panel/Padding/Content/Actions" unique_id=415670148]
+custom_minimum_size = Vector2(0, 56)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 19
+text = "Comer"
+
+[node name="Drink" type="Button" parent="NeedsPrototype/Center/Panel/Padding/Content/Actions" unique_id=1398951995]
+custom_minimum_size = Vector2(0, 56)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 19
+text = "Beber"
+
+[node name="Movement" type="VBoxContainer" parent="NeedsPrototype/Center/Panel/Padding/Content"]
+layout_mode = 2
+theme_override_constants/separation = 7
+
+[node name="Hint" type="Label" parent="NeedsPrototype/Center/Panel/Padding/Content/Movement"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.69, 0.78, 0.87, 1)
+theme_override_font_sizes/font_size = 16
+text = "Pilota al astronauta con las flechas"
+
+[node name="Arena" type="ColorRect" parent="NeedsPrototype/Center/Panel/Padding/Content/Movement"]
+custom_minimum_size = Vector2(0, 140)
+layout_mode = 2
+mouse_filter = 2
+color = Color(0.047, 0.09, 0.15, 1)
+
+[node name="Astronaut" type="Node2D" parent="NeedsPrototype/Center/Panel/Padding/Content/Movement/Arena"]
+position = Vector2(260, 70)

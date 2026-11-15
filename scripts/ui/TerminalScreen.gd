@@ -14,6 +14,10 @@ extends CanvasLayer
 
 signal terminal_opened()
 signal terminal_closed()
+signal eat_requested()
+signal drink_requested()
+signal grow_requested()
+signal recycle_requested()
 
 # ==============================================================================
 # CONSTANTES DE ESTILO RETRO CRT
@@ -43,6 +47,13 @@ const COLOR_CRT_BG: Color = Color(0.05, 0.15, 0.0, 1.0)             # #0d2700
 # Fuente tipográfica retro monoespaciada
 var _terminal_font: SystemFont
 var _is_open: bool = false
+var _satiety_bar: ProgressBar
+var _hydration_bar: ProgressBar
+var _rations_label: Label
+var _water_label: Label
+var _life_support_result: Label
+var _rations: int
+var _drinking_water: int
 
 # ==============================================================================
 # CICLO DE VIDA
@@ -60,6 +71,105 @@ func _setup_fonts() -> void:
 	_terminal_font.font_names = PackedStringArray([
 		"Monospace", "Courier New", "Courier", "DejaVu Sans Mono", "Liberation Mono", "Consolas"
 	])
+
+
+func setup_life_support(grow_cost: float, recycle_cost: float) -> void:
+	var body: VBoxContainer = $ScreenFrame/MarginContainer/VBox
+	var section := VBoxContainer.new()
+	section.name = "LifeSupport"
+	body.add_child(section)
+	body.move_child(section, body.get_node("HSeparator2").get_index())
+	section.add_child(_create_styled_label("=== [ SOPORTE VITAL ] ===", COLOR_PHOSPHOR_BRIGHT, 12))
+	var columns := HBoxContainer.new()
+	columns.add_theme_constant_override("separation", 12)
+	section.add_child(columns)
+
+	var food := VBoxContainer.new()
+	food.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	columns.add_child(food)
+	_rations_label = _create_styled_label("", COLOR_PHOSPHOR_GREEN, 12)
+	food.add_child(_rations_label)
+	_satiety_bar = _add_needs_bar(food)
+	_add_supply_buttons(food, "Comer", eat_requested, "Cultivar", grow_cost, grow_requested)
+
+	var water := VBoxContainer.new()
+	water.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	columns.add_child(water)
+	_water_label = _create_styled_label("", COLOR_PHOSPHOR_GREEN, 12)
+	water.add_child(_water_label)
+	_hydration_bar = _add_needs_bar(water)
+	_add_supply_buttons(water, "Beber", drink_requested, "Reciclar agua", recycle_cost, recycle_requested)
+
+	_life_support_result = _create_styled_label(" ", COLOR_PHOSPHOR_GREEN, 11)
+	section.add_child(_life_support_result)
+
+
+func _add_needs_bar(column: VBoxContainer) -> ProgressBar:
+	var bar := ProgressBar.new()
+	bar.custom_minimum_size.y = 15
+	bar.show_percentage = false
+	var background := StyleBoxFlat.new()
+	background.bg_color = Color("#153420")
+	bar.add_theme_stylebox_override("background", background)
+	column.add_child(bar)
+	return bar
+
+
+func _add_supply_buttons(column: VBoxContainer, consume_text: String, consume: Signal,
+		produce_text: String, cost: float, produce: Signal) -> void:
+	var row := HBoxContainer.new()
+	column.add_child(row)
+	_add_supply_button(row, consume_text, consume)
+	_add_supply_button(row, "%s (%.0f W)" % [produce_text, cost], produce)
+
+
+func _add_supply_button(row: HBoxContainer, caption: String, requested: Signal) -> void:
+	var button := Button.new()
+	button.text = caption
+	button.custom_minimum_size.y = 26
+	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	button.add_theme_font_override("font", _terminal_font)
+	button.add_theme_font_size_override("font_size", 12)
+	for state in ["normal", "hover", "pressed"]:
+		var style := StyleBoxFlat.new()
+		style.bg_color = Color("#0d2818") if state == "normal" else Color("#20452b")
+		style.border_color = COLOR_PHOSPHOR_DIM
+		style.set_border_width_all(1)
+		style.set_content_margin_all(4)
+		button.add_theme_stylebox_override(state, style)
+		button.add_theme_color_override("font_color" if state == "normal" else
+			"font_%s_color" % state, COLOR_PHOSPHOR_BRIGHT)
+	button.pressed.connect(func(): requested.emit())
+	row.add_child(button)
+
+
+func update_life_support_needs(satiety: float, hydration: float, _bone_density: float) -> void:
+	_update_needs_bar(_satiety_bar, satiety)
+	_update_needs_bar(_hydration_bar, hydration)
+	_update_life_support_labels()
+
+
+func update_life_support_supplies(rations: int, drinking_water: int) -> void:
+	_rations = rations
+	_drinking_water = drinking_water
+	_update_life_support_labels()
+
+
+func _update_life_support_labels() -> void:
+	_rations_label.text = "🍴 Saciedad %.0f/100  ·  Raciones %d" % [_satiety_bar.value, _rations]
+	_water_label.text = "💧 Hidratación %.0f/100  ·  Agua potable %d" % [_hydration_bar.value, _drinking_water]
+
+
+func _update_needs_bar(bar: ProgressBar, current: float) -> void:
+	bar.value = current
+	var fill := StyleBoxFlat.new()
+	fill.bg_color = COLOR_ALERT_YELLOW if current <= AstronautNeeds.MISSION_THRESHOLD else COLOR_PHOSPHOR_GREEN
+	bar.add_theme_stylebox_override("fill", fill)
+
+
+func show_life_support_result(message: String, success: bool) -> void:
+	_life_support_result.text = message
+	_life_support_result.modulate = COLOR_PHOSPHOR_BRIGHT if success else COLOR_ALERT_YELLOW
 
 
 func _connect_managers() -> void:

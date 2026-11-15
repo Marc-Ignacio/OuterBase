@@ -21,11 +21,9 @@ signal terminal_toggled(is_open: bool)
 # REFERENCIAS INTERNAS
 # ==============================================================================
 
-const TerminalScreenScript = preload("res://scripts/ui/TerminalScreen.gd")
-
 @onready var player: PlayerController = $Player
 @onready var spawn_marker: Marker2D = $SpawnPoint
-@onready var terminal_screen: CanvasLayer = $TerminalScreen
+@onready var terminal_screen: TerminalScreen = $TerminalScreen
 @onready var terminal_prompt: Control = $TerminalPrompt
 
 var _in_terminal_area: bool = false
@@ -54,6 +52,22 @@ func _ready() -> void:
 		
 	_connect_terminal_events()
 	_connect_interaction_areas()
+	_connect_life_support()
+
+
+func _connect_life_support() -> void:
+	var needs := player.needs_component
+	if not needs:
+		return
+	terminal_screen.setup_life_support(AstronautNeeds.GROW_ENERGY_COST, AstronautNeeds.RECYCLE_ENERGY_COST)
+	terminal_screen.eat_requested.connect(needs.eat_ration)
+	terminal_screen.drink_requested.connect(needs.drink_water)
+	terminal_screen.grow_requested.connect(needs.grow_ration)
+	terminal_screen.recycle_requested.connect(needs.recycle_water)
+	needs.needs_updated.connect(terminal_screen.update_life_support_needs)
+	needs.supplies_updated.connect(terminal_screen.update_life_support_supplies)
+	needs.supply_action_finished.connect(terminal_screen.show_life_support_result)
+	needs.enable_mission_life_support()
 
 
 func _connect_terminal_events() -> void:
