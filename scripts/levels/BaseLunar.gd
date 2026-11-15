@@ -37,6 +37,8 @@ const DEVICE_WATER := "Tanque H₂O"
 const DEVICE_OXYGEN := "Tanque O₂"
 const DEVICE_COMMUNICATIONS := "Panel COM"
 const REFUGE_ZONE := "Esclusa"
+const COMMAND_SHIELD_ZONE := "Zona de trabajo del centro de mando"
+const SHIELD_COST := 30
 const DEMO_TIME_MULTIPLIER := 2.0
 const WATER_LEAK_SECOND := 25.0 * DEMO_TIME_MULTIPLIER
 const DEVICE_LABELS := {
@@ -52,12 +54,16 @@ var _nearby_devices: Dictionary = {}
 var _prompt_device := ""
 var _prompt_feedback := ""
 const DEMO_DAY_SECONDS := 110.0 * DEMO_TIME_MULTIPLIER
-var _ate_today := false
-var _drank_today := false
+var _water_repaired_today := false
+var _water_restored := false
+var _report_confirmed := false
 var _trained_today := false
 var _filter_pending := false
 var _water_leak_triggered := false
 var _day_succeeded := false
+var _shield_deployed := false
+var _in_command_shield_zone := false
+@onready var _shield_panels: Node2D = $CommandShieldPanels
 var _refuge_seconds := 0.0
 var _last_day_remaining := 0.0
 
@@ -86,12 +92,24 @@ func _ready() -> void:
 	_connect_interaction_areas()
 	_connect_life_support()
 	communications.status_changed.connect(terminal_screen.update_communications)
+	terminal_toggled.connect(communications.set_terminal_open)
 	communications.report_result.connect(terminal_screen.show_life_support_result)
 	communications.report_result.connect(func(message: String, _success: bool):
 		if _prompt_device == DEVICE_COMMUNICATIONS:
 			_prompt_feedback = message)
 	terminal_screen.report_requested.connect(communications.send_report)
+	communications.report_confirmed.connect(func():
+		_report_confirmed = true
+		_update_daily_objectives())
+	communications.link_failed.connect(func():
+		_report_confirmed = false
+		_update_daily_objectives())
 	communications.publish_status()
+	terminal_screen.setup_command_shield(SHIELD_COST)
+	terminal_screen.shield_requested.connect(_deploy_command_shield)
+	EventManager.exit_restriction_changed.connect(_on_shield_restriction_changed)
+	EventManager.solar_calendar_restarted.connect(_reset_command_shield)
+	_update_command_shield()
 	DayManager.set_day_duration(DEMO_DAY_SECONDS)
 	EventManager.solar_calendar_rate = demo_solar_calendar_rate
 	DayManager.auto_advance_next_day = false
@@ -113,6 +131,7 @@ func _connect_life_support() -> void:
 	needs.supplies_updated.connect(terminal_screen.update_life_support_supplies)
 	needs.supply_action_finished.connect(terminal_screen.show_life_support_result)
 	terminal_screen.train_requested.connect(TaskManager.advance_daily_training)
+	terminal_toggled.connect(TaskManager.set_training_panel_open)
 	TaskManager.task_completed.connect(_on_life_support_task_changed)
 	TaskManager.new_task_assigned.connect(func(id: StringName, _urgent: bool):
 		_on_life_support_task_changed(id))
@@ -129,12 +148,10 @@ func _connect_life_support() -> void:
 		if resource == ResourceManager.RES_OXYGEN:
 			_update_oxygen_tank())
 	ResourceManager.oxygen_leak_changed.connect(func(_active: bool): _update_oxygen_tank())
-	needs.ration_eaten.connect(func():
-		_ate_today = true
-		_update_daily_objectives())
-	needs.water_drunk.connect(func():
-		_drank_today = true
-		_update_daily_objectives())
+	needs.water_recycled.connect(func():
+		if _water_repaired_today and not DayManager.is_day_completed:
+			_water_restored = true
+			_update_daily_objectives())
 	_on_life_support_task_changed(TaskManager.TASK_CLEAN_O2_FILTERS)
 	_update_oxygen_tank()
 	TaskManager.enable_daily_training()
@@ -144,6 +161,8 @@ func _connect_life_support() -> void:
 func _on_life_support_task_changed(id: StringName) -> void:
 	if id == TaskManager.TASK_CLEAN_O2_FILTERS:
 		_filter_pending = TaskManager.is_task_active(id)
+		if _water_leak_triggered and not _filter_pending:
+			_water_repaired_today = true
 		if _filter_pending and _prompt_device == DEVICE_WATER:
 			_prompt_feedback = ""
 		terminal_screen.update_filter_status(_filter_pending)
@@ -167,8 +186,10 @@ func _update_oxygen_tank() -> void:
 func _reset_daily_objectives(day: int) -> void:
 	_refuge_seconds = 0.0
 	_last_day_remaining = DayManager.get_time_remaining()
-	_ate_today = false
-	_drank_today = false
+	_water_leak_triggered = false
+	_water_repaired_today = false
+	_water_restored = false
+	_report_confirmed = false
 	_trained_today = false
 	_day_succeeded = false
 	terminal_screen.show_open_day(day)
@@ -181,22 +202,50 @@ func _track_refuge_time(remaining: float, _duration: float) -> void:
 	_last_day_remaining = remaining
 
 
+func _deploy_command_shield() -> void:
+	if _shield_deployed or not _in_command_shield_zone or DayManager.is_day_completed:
+		return
+	if EventManager.get_exit_restriction_name() != "SUSPENDIDA":
+		return
+	if not EnergyEconomy.try_spend_energy(SHIELD_COST, "Motor de blindaje"):
+		terminal_screen.show_life_support_result(EnergyEconomy.format_shortfall(SHIELD_COST), false)
+		return
+	_shield_deployed = true
+	_update_command_shield()
+	terminal_screen.show_life_support_result("Zona blindada · Centro de mando", true)
+
+
+func _on_shield_restriction_changed(state: String, _reason: String) -> void:
+	if state != "SUSPENDIDA":
+		_shield_deployed = false
+	_update_command_shield()
+
+
+func _reset_command_shield() -> void:
+	_shield_deployed = false
+	_update_command_shield()
+
+
+func _update_command_shield() -> void:
+	EventManager.set_player_in_shielded_work_zone(_shield_deployed and _in_command_shield_zone)
+	_shield_panels.visible = _shield_deployed
+	terminal_screen.update_command_shield(
+		EventManager.get_exit_restriction_name() == "SUSPENDIDA", _shield_deployed)
+
+
 func _update_daily_objectives() -> void:
-	terminal_screen.update_daily_objectives(_ate_today, _drank_today, _trained_today, not _filter_pending)
+	terminal_screen.update_daily_objectives(_water_restored, _report_confirmed)
 
 
 func _show_day_result() -> void:
 	var pending := PackedStringArray()
-	if not _ate_today:
-		pending.append("comer una ración")
-	if not _drank_today:
-		pending.append("beber agua potable")
-	if not _trained_today:
-		pending.append("completar el ejercicio")
-	if _filter_pending:
-		pending.append("cambiar el filtro")
+	if not _water_restored:
+		pending.append("reciclar agua potable" if _water_repaired_today else
+			"reparar H₂O y reciclar agua potable")
+	if not _report_confirmed:
+		pending.append("confirmar el reporte con Tierra")
 	_day_succeeded = pending.is_empty()
-	terminal_screen.show_closed_day(pending, _refuge_seconds)
+	terminal_screen.show_closed_day(pending, _refuge_seconds, _trained_today)
 	open_terminal()
 
 
@@ -238,6 +287,7 @@ func _connect_interaction_areas() -> void:
 		["OxygenTankArea", DEVICE_OXYGEN],
 		["CommunicationsArea", DEVICE_COMMUNICATIONS],
 		["AirlockArea", REFUGE_ZONE],
+		["CommandShieldArea", COMMAND_SHIELD_ZONE],
 		["BottomWallCommandCenter", "BottomWallCommandCenter"]
 	]
 	
@@ -259,6 +309,9 @@ func _connect_interaction_areas() -> void:
 func _handle_zone_entered(zone_name: String, area: Area2D) -> void:
 	if zone_name == REFUGE_ZONE:
 		player.enter_shelter()
+	elif zone_name == COMMAND_SHIELD_ZONE:
+		_in_command_shield_zone = true
+		_update_command_shield()
 	if DEVICE_LABELS.has(zone_name):
 		_nearby_devices[zone_name] = area.get_node("CollisionShape2D")
 	if zone_name == DEVICE_TERMINAL:
@@ -269,6 +322,9 @@ func _handle_zone_entered(zone_name: String, area: Area2D) -> void:
 func _handle_zone_exited(zone_name: String) -> void:
 	if zone_name == REFUGE_ZONE:
 		player.leave_shelter_for_work_zone()
+	elif zone_name == COMMAND_SHIELD_ZONE:
+		_in_command_shield_zone = false
+		_update_command_shield()
 	_nearby_devices.erase(zone_name)
 	if zone_name == DEVICE_TERMINAL:
 		_in_terminal_area = false
@@ -304,6 +360,8 @@ func _process(_delta: float) -> void:
 			message = "⚠ E · Reparar O₂ (%s)" % EnergyEconomy.format_sols(ceili(AstronautNeeds.FILTER_ENERGY_COST))
 		elif device == DEVICE_COMMUNICATIONS:
 			message = communications.interaction_caption()
+		elif device == DEVICE_GREENHOUSE:
+			message = greenhouse.interaction_caption()
 		if not _prompt_feedback.is_empty():
 			message += "\n" + _prompt_feedback
 		terminal_prompt.text = message
@@ -322,7 +380,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		DEVICE_TERMINAL:
 			open_terminal()
 		DEVICE_GREENHOUSE:
-			_prompt_feedback = greenhouse.interact()
+			_prompt_feedback = greenhouse.interact(player.needs_component.take_drinking_water)
 		DEVICE_WATER:
 			_prompt_feedback = player.needs_component.repair_water_tank()
 		DEVICE_OXYGEN:

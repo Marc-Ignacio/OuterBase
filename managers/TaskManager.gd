@@ -21,7 +21,7 @@ signal task_failed(task_id: StringName)
 
 ## Emitida para actualizar el temporizador de una tarea urgente a la UI.
 signal task_timer_updated(task_id: StringName, time_remaining: float, total_time: float)
-signal training_progress_changed(repetitions: int)
+signal training_progress_changed(repetitions: int, wait_seconds: int)
 signal training_result(message: String, success: bool)
 
 # ==============================================================================
@@ -69,7 +69,7 @@ const TASK_DIVERT_SHIELDS: StringName = &"divert_power_to_shields"
 const TASK_DAILY_TRAINING: StringName = &"daily_training"
 const TASK_REPAIR_COMMUNICATIONS: StringName = &"repair_communications"
 const TRAINING_REPETITIONS := 3
-const TRAINING_ENERGY_COST := 30.0
+const TRAINING_REPETITION_SECONDS := 2.0
 
 # ==============================================================================
 # PARÁMETROS DE GAME DESIGN (@export)
@@ -100,6 +100,9 @@ var _greenhouse_buff_time: float = 0.0
 var _o2_buff_time: float = 0.0
 var _training_day := -1
 var _training_repetitions := -1 # -1 pendiente, 0 iniciado, 3 completado.
+var _training_panel_open := false
+var _training_wait := 0.0
+var _training_last_remaining := 0.0
 var _scheduled_filter_maintenance := false
 
 # ==============================================================================
@@ -162,8 +165,8 @@ func _on_event_started(event_type: StringName) -> void:
 func _create_initial_routine_tasks() -> void:
 	assign_routine_task(
 		TASK_WATER_PLANTS,
-		"Regar Cultivos Hidropónicos",
-		"Acude al Invernadero y suministra agua a los cultivos para maximizar la cosecha.",
+		"Riega los cultivos",
+		"Pulsa E junto al panel. Usa agua de la base.",
 		"Invernadero"
 	)
 	
@@ -208,8 +211,9 @@ func assign_routine_task(id: StringName, title: String, description: String, loc
 func enable_daily_training() -> void:
 	if not DayManager.day_started.is_connected(_assign_daily_training):
 		DayManager.day_started.connect(_assign_daily_training)
+		DayManager.day_time_updated.connect(_advance_training_clock)
 	_assign_daily_training(DayManager.current_day)
-	training_progress_changed.emit(_training_repetitions)
+	training_progress_changed.emit(_training_repetitions, ceili(_training_wait))
 
 
 func _assign_daily_training(day: int) -> void:
@@ -217,11 +221,13 @@ func _assign_daily_training(day: int) -> void:
 		return
 	_training_day = day
 	_training_repetitions = -1
+	_training_wait = 0.0
+	_training_last_remaining = DayManager.get_time_remaining()
 	if not _scheduled_filter_maintenance:
 		_assign_filter_task()
 	assign_routine_task(TASK_DAILY_TRAINING, "Entrenamiento diario",
-		"Completa tres pulsaciones de ejercicio.", "Terminal")
-	training_progress_changed.emit(_training_repetitions)
+		"Actividad opcional. Completa tres pulsaciones de ejercicio.", "Terminal")
+	training_progress_changed.emit(_training_repetitions, 0)
 
 
 func reset_demo_tasks() -> void:
@@ -233,12 +239,11 @@ func reset_demo_tasks() -> void:
 
 
 func advance_daily_training() -> void:
-	if not is_task_active(TASK_DAILY_TRAINING) or _training_repetitions >= TRAINING_REPETITIONS:
+	if not _training_panel_open or DayManager.is_day_completed or not DayManager.is_running:
+		return
+	if not is_task_active(TASK_DAILY_TRAINING) or _training_repetitions >= TRAINING_REPETITIONS or _training_wait > 0.0:
 		return
 	if _training_repetitions == -1:
-		if not EnergyEconomy.try_spend_energy(TRAINING_ENERGY_COST, "Entrenar"):
-			training_result.emit(EnergyEconomy.format_shortfall(TRAINING_ENERGY_COST), false)
-			return
 		_training_repetitions = 0
 		training_result.emit("Entrenamiento iniciado", true)
 	else:
@@ -246,7 +251,25 @@ func advance_daily_training() -> void:
 		if _training_repetitions == TRAINING_REPETITIONS:
 			complete_task(TASK_DAILY_TRAINING)
 			training_result.emit("Entrenamiento completado", true)
-	training_progress_changed.emit(_training_repetitions)
+	_training_wait = TRAINING_REPETITION_SECONDS if _training_repetitions < TRAINING_REPETITIONS else 0.0
+	_training_last_remaining = DayManager.get_time_remaining()
+	training_progress_changed.emit(_training_repetitions, ceili(_training_wait))
+
+
+func set_training_panel_open(open: bool) -> void:
+	_training_panel_open = open
+	_training_last_remaining = DayManager.get_time_remaining()
+
+
+func _advance_training_clock(remaining: float, _total: float) -> void:
+	var elapsed := maxf(0.0, _training_last_remaining - remaining)
+	_training_last_remaining = remaining
+	if not _training_panel_open or _training_wait <= 0.0:
+		return
+	var previous_wait := ceili(_training_wait)
+	_training_wait = maxf(0.0, _training_wait - elapsed)
+	if ceili(_training_wait) != previous_wait:
+		training_progress_changed.emit(_training_repetitions, ceili(_training_wait))
 
 
 ## Tarea Crítica activada ante Llamarada Solar: Desviar Energía a Escudos.
@@ -272,7 +295,7 @@ func assign_emergency_solar_flare_task() -> void:
 
 ## Invocado cuando el astronauta interactúa con la estación física correspondiente en el mapa.
 ## Retorna true si la tarea fue completada con éxito.
-func complete_task(task_id: StringName) -> bool:
+func complete_task(task_id: StringName, use_drinking_water: Callable = Callable()) -> bool:
 	if not _active_tasks.has(task_id):
 		return false
 	
@@ -282,7 +305,8 @@ func complete_task(task_id: StringName) -> bool:
 	if task.water_cost > 0.0 and has_node("/root/ResourceManager"):
 		var rm: Node = get_node("/root/ResourceManager")
 		if not rm.consume_resource(rm.RES_WATER, task.water_cost):
-			return false
+			if task_id != TASK_WATER_PLANTS or not use_drinking_water.is_valid() or not use_drinking_water.call():
+				return false
 	
 	# Efectos específicos al completar
 	match task_id:

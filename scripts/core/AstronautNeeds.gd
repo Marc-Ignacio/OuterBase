@@ -21,6 +21,7 @@ signal supplies_updated(rations: int, drinking_water: int)
 signal supply_action_finished(message: String, success: bool)
 signal ration_eaten()
 signal water_drunk()
+signal water_recycled()
 
 ## Emitida cuando una necesidad entra en estado crítico (< 30%).
 signal need_critical(need_type: StringName, current_value: float)
@@ -187,14 +188,20 @@ func eat_ration() -> void:
 
 
 func drink_water() -> void:
-	if _drinking_water == 0:
+	if not take_drinking_water():
 		supply_action_finished.emit("Sin agua potable", false)
 		return
-	_drinking_water -= 1
 	replenish_hygiene(RECOVERY_POINTS)
-	supplies_updated.emit(_rations, _drinking_water)
 	supply_action_finished.emit("Agua consumida", true)
 	water_drunk.emit()
+
+
+func take_drinking_water() -> bool:
+	if _drinking_water == 0:
+		return false
+	_drinking_water -= 1
+	supplies_updated.emit(_rations, _drinking_water)
+	return true
 
 
 func harvest_ration() -> void:
@@ -211,6 +218,7 @@ func recycle_water() -> void:
 	_drinking_water += 1
 	supplies_updated.emit(_rations, _drinking_water)
 	supply_action_finished.emit("Agua reciclada", true)
+	water_recycled.emit()
 
 
 func repair_water_tank() -> String:

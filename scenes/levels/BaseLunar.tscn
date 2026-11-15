@@ -13,6 +13,7 @@
 [ext_resource type="PackedScene" path="res://scenes/levels/Communications.tscn" id="13_communications"]
 [ext_resource type="Texture2D" path="res://assets/sprites/moon2.png" id="11_moon"]
 [ext_resource type="Shader" path="res://assets/sprites/lunar_exterior_key.gdshader" id="12_exterior"]
+[ext_resource type="Script" path="res://scripts/levels/ExteriorPerimeter.gd" id="14_perimeter"]
 
 [sub_resource type="ShaderMaterial" id="LunarExteriorKey"]
 shader = ExtResource("12_exterior")
@@ -70,6 +71,9 @@ size = Vector2(32, 24)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_terminal_trigger"]
 size = Vector2(44, 40)
+
+[sub_resource type="RectangleShape2D" id="CommandShieldShape"]
+size = Vector2(140, 134)
 
 [node name="BaseLunar" type="Node2D" unique_id=821381413]
 script = ExtResource("1_baselunar")
@@ -180,11 +184,30 @@ offset_right = 366.0
 offset_bottom = 326.0
 color = Color(0.21176471, 0.19607843, 0.34901962, 1)
 
+[node name="ExteriorWallFaces" type="Node2D" parent="."]
+z_index = -1
+script = ExtResource("14_perimeter")
+
 [node name="Greenhouse" parent="." instance=ExtResource("10_greenhouse")]
 position = Vector2(84, 120)
 
 [node name="Communications" parent="." instance=ExtResource("13_communications")]
 position = Vector2(373, 68)
+
+[node name="CommandShieldPanels" type="Node2D" parent="."]
+visible = false
+
+[node name="LeftPanel" type="Polygon2D" parent="CommandShieldPanels"]
+color = Color(0.28, 0.66, 0.75, 1)
+polygon = PackedVector2Array(326, 75, 332, 75, 332, 176, 326, 176)
+
+[node name="RightPanel" type="Polygon2D" parent="CommandShieldPanels"]
+color = Color(0.28, 0.66, 0.75, 1)
+polygon = PackedVector2Array(444, 75, 450, 75, 450, 176, 444, 176)
+
+[node name="Motor" type="Polygon2D" parent="CommandShieldPanels"]
+color = Color(0.91, 0.73, 0.31, 1)
+polygon = PackedVector2Array(438, 69, 452, 69, 452, 75, 438, 75)
 
 [node name="WallsStaticBody" type="StaticBody2D" parent="." unique_id=336970959]
 
@@ -398,3 +421,9 @@ position = Vector2(373, 86)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="InteractionZones/CommunicationsArea"]
 shape = SubResource("RectangleShape2D_soporte_vital")
+
+[node name="CommandShieldArea" type="Area2D" parent="InteractionZones"]
+position = Vector2(390, 119)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="InteractionZones/CommandShieldArea"]
+shape = SubResource("CommandShieldShape")

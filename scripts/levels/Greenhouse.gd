@@ -22,7 +22,19 @@ func _ready() -> void:
 	reset_crop()
 
 
-func interact() -> String:
+func interaction_caption() -> String:
+	if TaskManager.is_task_active(TaskManager.TASK_WATER_PLANTS):
+		return "E · Regar cultivos"
+	if _harvest_ready:
+		return "E · Cosechar"
+	return "E · Sembrar" if _timer.is_stopped() else "Cultivo en curso"
+
+
+func interact(use_drinking_water: Callable = Callable()) -> String:
+	if TaskManager.is_task_active(TaskManager.TASK_WATER_PLANTS):
+		if TaskManager.complete_task(TaskManager.TASK_WATER_PLANTS, use_drinking_water):
+			return "Cultivos regados"
+		return "Falta agua de riego\nRecicla agua en la Terminal y vuelve"
 	if _harvest_ready:
 		reset_crop()
 		ration_harvested.emit()

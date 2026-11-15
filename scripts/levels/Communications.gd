@@ -2,6 +2,8 @@ extends Node2D
 
 signal status_changed(status: String, can_report: bool)
 signal report_result(message: String, success: bool)
+signal report_confirmed()
+signal link_failed()
 
 enum Link { ONLINE, UNSTABLE, OFFLINE }
 
@@ -30,7 +32,7 @@ func _ready() -> void:
 	EventManager.radiation_exposure_updated.connect(func(_flux: float, _dose: float, _rate: float): _update_alert())
 	EventManager.shelter_order_issued.connect(func(_order: String, _safe: bool, _remaining: float): _update_alert())
 	DayManager.day_paused.connect(func(paused: bool): _flare_timer.paused = paused)
-	DayManager.day_started.connect(func(_day: int): _flare_timer.paused = false)
+	DayManager.day_started.connect(_on_day_started)
 	_flare_timer.timeout.connect(func():
 		if _link == Link.UNSTABLE:
 			_set_link(Link.ONLINE))
@@ -41,6 +43,10 @@ func _ready() -> void:
 
 func publish_status() -> void:
 	_set_link(_link)
+
+
+func set_terminal_open(open: bool) -> void:
+	$HUD.visible = not open
 
 
 func interaction_caption() -> String:
@@ -73,7 +79,17 @@ func send_report() -> String:
 
 func _confirm_report() -> void:
 	publish_status()
-	_show_report_message("Confirmación recibida · Ida y vuelta simuladas", true)
+	if not DayManager.is_day_completed:
+		_show_report_message("Confirmación recibida · Ida y vuelta simuladas", true)
+		report_confirmed.emit()
+
+
+func _on_day_started(_day: int) -> void:
+	_flare_timer.paused = false
+	_report_timer.stop()
+	_feedback_timer.stop()
+	_report_message.hide()
+	publish_status()
 
 
 func _show_report_message(message: String, success: bool) -> String:
@@ -98,6 +114,7 @@ func _on_solar_milestone(hito: Dictionary) -> void:
 			"Reiniciar comunicaciones", "Pulsa E junto al panel COM de la pared superior.",
 			"Centro de mando · Panel COM")
 		_set_link(Link.OFFLINE)
+		link_failed.emit()
 
 
 func _reset() -> void:
@@ -139,10 +156,12 @@ func _update_alert() -> void:
 		warning = "Llamarada solar"
 	elif _storm_seen and EventManager.get_exit_restriction_name() == "SUSPENDIDA":
 		color = Color("#ff927d")
-		var protection := "En refugio" if EventManager.is_player_sheltered() else (
-			"Refugio · Baja desde el centro de mando")
-		warning = "Tormenta de partículas · Busca protección\n%s · Dosis simulada: %.4f mSv/s" % [
-			protection, EventManager.get_simulated_dose_rate()]
+		var protection := "Refugio · Baja desde el centro de mando"
+		if EventManager.is_player_sheltered():
+			protection = "En refugio"
+		elif EventManager.is_player_in_shielded_work_zone():
+			protection = "Zona blindada · Centro de mando"
+		warning = "Tormenta solar · Busca protección\n%s" % protection
 	elif _link == Link.OFFLINE:
 		warning = "COM averiado · Reinicia el panel del centro de mando"
 	_alert.visible = not warning.is_empty()

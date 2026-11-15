@@ -117,6 +117,8 @@ var _calendario_solar: Node
 var _avisos_solares: Dictionary = {} # id_episodio -> Dictionary
 var _estado_salida: ExitRestriction = ExitRestriction.PERMITIDA
 var _is_player_sheltered: bool = true
+var _in_shielded_work_zone := false
+const WORK_ZONE_DOSE_FACTOR := 0.25
 var _flujo_pfu_actual: float = 0.0
 var _exposicion_simulada_msv: float = 0.0
 var _tiempo_para_refugiarse: float = 0.0
@@ -226,6 +228,7 @@ func _on_day_restarted() -> void:
 
 ## Reinicia el calendario solar y limpia el estado del tablero de avisos.
 func reiniciar_calendario() -> void:
+	_in_shielded_work_zone = false
 	_solar_day_offset = 0.0
 	if _calendario_solar and _calendario_solar.has_method("reiniciar"):
 		_calendario_solar.reiniciar()
@@ -468,7 +471,18 @@ func is_player_sheltered() -> bool:
 
 
 func get_simulated_dose_rate() -> float:
-	return 0.0 if _is_player_sheltered else (_flujo_pfu_actual / 100.0) * radiation_dose_factor
+	if _is_player_sheltered:
+		return 0.0
+	var protection := WORK_ZONE_DOSE_FACTOR if is_player_in_shielded_work_zone() else 1.0
+	return (_flujo_pfu_actual / 100.0) * radiation_dose_factor * protection
+
+
+func set_player_in_shielded_work_zone(active: bool) -> void:
+	_in_shielded_work_zone = active
+
+
+func is_player_in_shielded_work_zone() -> bool:
+	return _in_shielded_work_zone and _estado_salida == ExitRestriction.SUSPENDIDA
 
 
 ## Define el estado de refugio del jugador.

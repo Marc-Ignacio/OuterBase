@@ -165,7 +165,11 @@ func _calculate_resource_cycle(delta_time: float) -> void:
 	# -------------------------------------------------------------------------
 	# 2. Potencia solar de uso directo. EnergyEconomy acredita el excedente.
 	# -------------------------------------------------------------------------
-	var direct_power := EnergyEconomy.get_operating_solar_power() * production_multiplier * delta_time
+	var recovering := BaseFSM.is_in_state(BaseFSM.BaseState.RECUPERACION)
+	# Los paneles vuelven a alimentar la base al terminar la alerta.
+	# La eficiencia reducida aún se aplica a la producción de los módulos.
+	var solar_multiplier := 1.0 if recovering else production_multiplier
+	var direct_power := EnergyEconomy.get_operating_solar_power() * solar_multiplier * delta_time
 	
 	# -------------------------------------------------------------------------
 	# 3. CONSUMOS DE ENERGÍA INTERDEPENDIENTES
@@ -179,7 +183,9 @@ func _calculate_resource_cycle(delta_time: float) -> void:
 	var greenhouse_powered := life_support_active and EnergyEconomy.try_spend_energy(
 		greenhouse_deficit, "Invernadero automático")
 
-	if not life_support_active and not is_blackout:
+	# La recuperación tiene su propio temporizador. Un déficit transitorio
+	# durante esa fase no debe interrumpir el regreso a producción normal.
+	if not life_support_active and not is_blackout and not recovering:
 		blackout_triggered.emit()
 		if has_node("/root/BaseFSM"):
 			var fsm: Node = get_node("/root/BaseFSM")

@@ -19,6 +19,7 @@ signal drink_requested()
 signal recycle_requested()
 signal train_requested()
 signal report_requested()
+signal shield_requested()
 signal finish_day_requested()
 signal next_day_requested()
 signal retry_day_requested()
@@ -68,10 +69,15 @@ var _water_tank_status: Label
 var _oxygen_tank_status: Label
 var _communications_status: Label
 var _report_button: Button
+var _shield_row: HBoxContainer
+var _shield_button: Button
+var _shield_cost: int
 var _recycle_button: Button
 var _train_button: Button
 var _support_notes: AcceptDialog
 var _task_timers: Dictionary = {}
+var _solar_details_button: Button
+var _show_solar_details := false
 @onready var _frame_size := screen_frame.size
 var _life_support_controls: VBoxContainer
 var _daily_objectives: Label
@@ -89,6 +95,11 @@ func _ready() -> void:
 	get_viewport().size_changed.connect(_fit_screen_frame)
 	_fit_screen_frame()
 	_setup_fonts()
+	var alerts_column := telemetry_label.get_parent().get_parent()
+	var details_row := HBoxContainer.new()
+	alerts_column.add_child(details_row)
+	alerts_column.move_child(details_row, 1)
+	_solar_details_button = _add_supply_button(details_row, "Ver detalles", _toggle_solar_details)
 	_connect_managers()
 	EnergyEconomy.energy_updated.connect(_update_energy_display)
 	refresh()
@@ -169,9 +180,9 @@ func setup_life_support(recycle_cost: float) -> void:
 	var day_actions := HBoxContainer.new()
 	section.add_child(day_actions)
 	_daily_objectives = _create_styled_label("", COLOR_PHOSPHOR_BRIGHT, 12)
-	_daily_objectives.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_daily_objectives.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	day_actions.add_child(_daily_objectives)
+	var missions_column := missions_vbox.get_parent().get_parent()
+	missions_column.add_child(_daily_objectives)
+	missions_column.move_child(_daily_objectives, 1)
 	_finish_day_button = _add_supply_button(day_actions, "Cerrar día", finish_day_requested.emit)
 	_next_day_button = _add_supply_button(day_actions, "Siguiente día", next_day_requested.emit)
 	_retry_day_button = _add_supply_button(day_actions, "Reintentar", retry_day_requested.emit)
@@ -180,10 +191,9 @@ func setup_life_support(recycle_cost: float) -> void:
 		button.size_flags_horizontal = Control.SIZE_FILL
 
 
-func update_daily_objectives(ate: bool, drank: bool, trained: bool, filter_ready: bool) -> void:
-	_daily_objectives.text = "🍴 Comer %s   💧 Beber %s   ↗ Ejercicio %s   ⚙ Filtro %s" % [
-		"✓" if ate else "○", "✓" if drank else "○",
-		"✓" if trained else "○", "✓" if filter_ready else "○",
+func update_daily_objectives(water_restored: bool, report_confirmed: bool) -> void:
+	_daily_objectives.text = "%s Restablece el agua potable\n%s Confirma el reporte con Tierra" % [
+		"✓" if water_restored else "○", "✓" if report_confirmed else "○",
 	]
 
 
@@ -197,12 +207,14 @@ func show_open_day(day: int) -> void:
 	_retry_day_button.hide()
 
 
-func show_closed_day(pending: PackedStringArray, refuge_seconds: float) -> void:
+func show_closed_day(pending: PackedStringArray, refuge_seconds: float, trained: bool) -> void:
 	var success := pending.is_empty()
 	_life_support_controls.hide()
 	_finish_day_button.hide()
-	_day_result.text = "★ INSIGNIA · Día completado" if success else (
+	_day_result.text = "Misión cumplida" if success else (
 		"Faltó %s." % ", ".join(pending))
+	if trained:
+		_day_result.text += "\n★ Insignia de ejercicio"
 	_day_result.text += "\nTiempo en refugio durante la tormenta · %.1f s. ¿Qué prepararías antes de la próxima tormenta?" % refuge_seconds
 	_day_result.modulate = COLOR_PHOSPHOR_BRIGHT if success else COLOR_ALERT_YELLOW
 	_day_result.show()
@@ -230,17 +242,41 @@ func update_communications(status: String, can_report: bool) -> void:
 	_report_button.tooltip_text = "" if can_report else status
 
 
+func setup_command_shield(cost: int) -> void:
+	_shield_cost = cost
+	_shield_row = HBoxContainer.new()
+	_life_support_controls.add_child(_shield_row)
+	_life_support_controls.move_child(_shield_row, _life_support_result.get_index())
+	_shield_button = _add_supply_button(_shield_row, "", shield_requested.emit)
+	_shield_button.custom_minimum_size.x = 296
+	_shield_button.size_flags_horizontal = Control.SIZE_FILL
+	var explanation := _create_styled_label(
+		"Los motores colocan los paneles. Los paneles reducen la exposición.",
+		COLOR_PHOSPHOR_BRIGHT, 11)
+	explanation.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_shield_row.add_child(explanation)
+
+
+func update_command_shield(storm_active: bool, deployed: bool) -> void:
+	_shield_row.visible = storm_active
+	_shield_button.disabled = deployed
+	_shield_button.text = "Zona blindada · Centro de mando" if deployed else (
+		"Desplegar blindaje (%s)" % EnergyEconomy.format_sols(_shield_cost))
+	_shield_button.tooltip_text = "Costo simulado · Protege esta sala durante S3"
+
+
 func update_crop_status(status: String) -> void:
 	_crop_status.text = status
 
 
-func update_training_progress(repetitions: int) -> void:
+func update_training_progress(repetitions: int, wait_seconds: int) -> void:
 	var target := TaskManager.TRAINING_REPETITIONS
-	_train_button.disabled = repetitions >= target
+	_train_button.disabled = repetitions >= target or wait_seconds > 0
 	if repetitions < 0:
-		_train_button.text = "↗ Entrenar (%s)" % EnergyEconomy.format_sols(ceili(TaskManager.TRAINING_ENERGY_COST))
+		_train_button.text = "↗ Entrenar · Opcional"
 	elif repetitions < target:
-		_train_button.text = "↗ Repetición %d/%d" % [repetitions, target]
+		_train_button.text = "↗ %d/%d · %s" % [repetitions, target,
+			"Espera %d s" % wait_seconds if wait_seconds > 0 else "Pulsar"]
 	else:
 		_train_button.text = "✓ Entrenamiento %d/%d" % [repetitions, target]
 
@@ -394,6 +430,7 @@ func open() -> void:
 ## Cierra la terminal
 func close() -> void:
 	_is_open = false
+	_show_solar_details = false
 	visible = false
 	terminal_closed.emit()
 
@@ -462,6 +499,10 @@ func _populate_tasks() -> void:
 	if has_node("/root/TaskManager"):
 		var tm = get_node("/root/TaskManager")
 		tasks = tm.get_active_tasks_data()
+		tasks = tasks.filter(func(task: Dictionary) -> bool:
+			return task.get("id") != TaskManager.TASK_DAILY_TRAINING)
+	if not TaskManager.is_task_active(TaskManager.TASK_WATER_PLANTS):
+		missions_vbox.add_child(_create_styled_label("✓ Cultivos regados · Invernadero", COLOR_PHOSPHOR_BRIGHT, 12))
 		
 	if tasks.is_empty():
 		var empty_lbl = _create_styled_label(
@@ -493,16 +534,13 @@ func _create_task_entry(task: Dictionary) -> PanelContainer:
 	
 	var is_urgent: bool = task.get("is_urgent", false)
 	var title_prefix = "[!] " if is_urgent else "• "
-	var title_text = title_prefix + str(task.get("title", "Tarea sin nombre"))
+	var title_text = "%s%s · %s" % [title_prefix, task.get("title", "Tarea sin nombre"),
+		task.get("target_location", "Base")]
 	var title_color = COLOR_ALERT_YELLOW if is_urgent else COLOR_PHOSPHOR_BRIGHT
 	var title_lbl = _create_styled_label(title_text, title_color, 12, true)
 	vbox.add_child(title_lbl)
 	
-	var loc_text = "Ubicación · %s" % str(task.get("target_location", "General"))
-	var loc_lbl = _create_styled_label(loc_text, COLOR_PHOSPHOR_GREEN, 10)
-	vbox.add_child(loc_lbl)
-	
-	var desc_text = "> %s" % str(task.get("description", ""))
+	var desc_text = str(task.get("description", ""))
 	var desc_lbl = _create_styled_label(desc_text, COLOR_PHOSPHOR_DIM, 10)
 	vbox.add_child(desc_lbl)
 	
@@ -529,6 +567,8 @@ func _update_task_timer(id: StringName, remaining: float, _total: float) -> void
 
 func _populate_events() -> void:
 	_update_header()
+	_solar_details_button.text = "Volver a alertas" if _show_solar_details else "Ver detalles"
+	telemetry_label.get_parent().visible = _show_solar_details
 	_update_telemetry()
 	
 	if not notices_vbox:
@@ -557,8 +597,13 @@ func _populate_events() -> void:
 		notices_vbox.add_child(notice_panel)
 
 
+func _toggle_solar_details() -> void:
+	_show_solar_details = not _show_solar_details
+	_populate_events()
+
+
 func _update_telemetry() -> void:
-	if not telemetry_label:
+	if not telemetry_label or not _show_solar_details:
 		return
 		
 	var flux_pfu: float = 0.0
@@ -573,16 +618,22 @@ func _update_telemetry() -> void:
 		exit_state = em.get_exit_restriction_name()
 		is_sheltered = em.is_player_sheltered()
 		
-	var shelter_desc = "En refugio" if is_sheltered else "Fuera del refugio"
+	var shelter_desc := "Fuera del refugio"
+	if is_sheltered:
+		shelter_desc = "En refugio"
+	elif EventManager.is_player_in_shielded_work_zone():
+		shelter_desc = "Zona blindada"
 	
 	var telemetry_text = (
 		"Salida · %s   |   %s\n" +
-		"Flujo · %.1f pfu (SWPC)   |   Dosis simulada · %.4f mSv"
+		"Flujo · %.1f pfu | Dosis simulada · %.4f mSv\n" +
+		"Tasa simulada · %.4f mSv/s"
 	) % [
 		exit_state,
 		shelter_desc,
 		flux_pfu,
-		dose_msv
+		dose_msv,
+		EventManager.get_simulated_dose_rate()
 	]
 	
 	telemetry_label.text = telemetry_text
@@ -609,32 +660,48 @@ func _create_notice_entry(notice: Dictionary) -> PanelContainer:
 	var vbox = VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", 2)
 	
-	var title = str(notice.get("titulo", "Aviso Solar"))
-	var title_lbl = _create_styled_label("[AVISO] " + title, COLOR_ALERT_YELLOW, 11, true)
-	vbox.add_child(title_lbl)
-	
-	var meta_text = "%s · %s" % [
-		str(notice.get("tipo_hito", "N/A")),
-		str(notice.get("fecha_utc", "N/A"))
-	]
-	var meta_lbl = _create_styled_label(meta_text, COLOR_PHOSPHOR_DIM, 11)
-	meta_lbl.tooltip_text = str(notice.get("id_episodio", ""))
-	vbox.add_child(meta_lbl)
-	
-	var fuente_text = "> Fuente: %s | Nivel: %s | Flujo: %.1f pfu" % [
-		str(notice.get("fuente", "NASA/DONKI")),
-		str(notice.get("nivel", notice.get("clase", "N/A"))),
-		float(notice.get("flujo_pfu", 0.0))
-	]
-	var fuente_lbl = _create_styled_label(fuente_text, COLOR_PHOSPHOR_GREEN, 11)
-	vbox.add_child(fuente_lbl)
-	
-	var msg_text = "> %s" % str(notice.get("mensaje", ""))
-	var msg_lbl = _create_styled_label(msg_text, COLOR_PHOSPHOR_BRIGHT, 10)
-	vbox.add_child(msg_lbl)
+	if _show_solar_details:
+		_add_solar_details(vbox, notice)
+	else:
+		vbox.add_child(_create_styled_label(_solar_summary(notice), COLOR_PHOSPHOR_BRIGHT, 13))
 	
 	panel.add_child(vbox)
 	return panel
+
+
+func _solar_summary(notice: Dictionary) -> String:
+	match str(notice.get("tipo", "")):
+		"FLR":
+			return "Llamarada solar · Sigue con tus tareas y revisa COM si falla."
+		"SEP":
+			if EventManager.get_exit_restriction_name() == "SUSPENDIDA":
+				return "Tormenta solar · Ve al refugio o despliega el blindaje."
+			return "Tormenta solar · Revisa el estado de salida antes de salir."
+	return "Aviso solar · Revisa los detalles antes de salir."
+
+
+func _add_solar_details(card: VBoxContainer, notice: Dictionary) -> void:
+	var title := "Aviso solar"
+	match str(notice.get("tipo", "")):
+		"FLR": title = "Llamarada solar"
+		"SEP": title = "Tormenta de partículas solares"
+	card.add_child(_create_styled_label(title, COLOR_ALERT_YELLOW, 13))
+	var meta := PackedStringArray()
+	for field: String in ["fecha_utc", "fuente", "clase", "nivel"]:
+		var value := str(notice.get(field, "")).strip_edges()
+		if not value.is_empty():
+			match field:
+				"fecha_utc": meta.append("%s UTC" % value.trim_suffix("Z"))
+				"fuente": meta.append(value)
+				"clase": meta.append("Clase %s" % value)
+				"nivel": meta.append("Nivel %s" % value)
+	var flux := float(notice.get("flujo_pfu", 0.0))
+	if flux > 0.0:
+		meta.append("Flujo %.1f pfu" % flux)
+	var source_label := _create_styled_label(" · ".join(meta), COLOR_PHOSPHOR_DIM, 11)
+	source_label.tooltip_text = str(notice.get("url_fuente", ""))
+	card.add_child(source_label)
+	card.add_child(_create_styled_label(str(notice.get("mensaje", "")), COLOR_PHOSPHOR_BRIGHT, 11))
 
 
 func _create_styled_label(text: String, color: Color, font_size: int = 11, is_bold: bool = false) -> Label:
