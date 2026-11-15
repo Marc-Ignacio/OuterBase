@@ -26,6 +26,7 @@ signal terminal_toggled(is_open: bool)
 @onready var terminal_screen: TerminalScreen = $TerminalScreen
 @onready var terminal_prompt: Label = $TerminalPrompt
 @onready var greenhouse: Node2D = $Greenhouse
+@onready var shelter_sign: Label = $InteractionZones/AirlockArea/CollisionShape2D/ShelterFloor/ShelterSign
 @onready var communications: Node2D = $Communications
 
 ## Segundos de calendario por segundo de misión en la demo.
@@ -90,6 +91,7 @@ func _ready() -> void:
 		
 	_connect_terminal_events()
 	_connect_interaction_areas()
+	player.shelter_state_changed.connect(_update_shelter_sign)
 	_connect_life_support()
 	communications.status_changed.connect(terminal_screen.update_communications)
 	terminal_toggled.connect(communications.set_terminal_open)
@@ -317,6 +319,10 @@ func _handle_zone_entered(zone_name: String, area: Area2D) -> void:
 	if zone_name == DEVICE_TERMINAL:
 		_in_terminal_area = true
 	player_entered_zone.emit(zone_name)
+
+
+func _update_shelter_sign(in_shelter: bool) -> void:
+	shelter_sign.text = "En refugio" if in_shelter else "REFUGIO"
 
 
 func _handle_zone_exited(zone_name: String) -> void:

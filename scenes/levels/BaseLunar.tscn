@@ -14,6 +14,7 @@
 [ext_resource type="Texture2D" path="res://assets/sprites/moon2.png" id="11_moon"]
 [ext_resource type="Shader" path="res://assets/sprites/lunar_exterior_key.gdshader" id="12_exterior"]
 [ext_resource type="Script" path="res://scripts/levels/ExteriorPerimeter.gd" id="14_perimeter"]
+[ext_resource type="Script" path="res://scripts/levels/SolarArray.gd" id="15_solar_array"]
 
 [sub_resource type="ShaderMaterial" id="LunarExteriorKey"]
 shader = ExtResource("12_exterior")
@@ -191,6 +192,23 @@ script = ExtResource("14_perimeter")
 [node name="Greenhouse" parent="." instance=ExtResource("10_greenhouse")]
 position = Vector2(84, 120)
 
+[node name="SolarArray" type="Node2D" parent="."]
+position = Vector2(260, 153)
+script = ExtResource("15_solar_array")
+
+[node name="Status" type="Label" parent="SolarArray"]
+offset_left = -70.0
+offset_top = 28.0
+offset_right = 70.0
+theme_override_colors/font_color = Color(0.95, 0.97, 1, 1)
+theme_override_colors/font_shadow_color = Color(0.12, 0.14, 0.2, 1)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+theme_override_font_sizes/font_size = 8
+text = "Paneles solares"
+horizontal_alignment = 1
+mouse_filter = 2
+
 [node name="Communications" parent="." instance=ExtResource("13_communications")]
 position = Vector2(373, 68)
 
@@ -323,6 +341,32 @@ position = Vector2(240, 122)
 position = Vector2(165, 166)
 shape = SubResource("RectangleShape2D_airlock")
 
+[node name="ShelterFloor" type="Polygon2D" parent="InteractionZones/AirlockArea/CollisionShape2D"]
+color = Color(0.17, 0.35, 0.32, 1)
+polygon = PackedVector2Array(-12, -12, 12, -12, 12, 12, -12, 12)
+
+[node name="LeftWall" type="Polygon2D" parent="InteractionZones/AirlockArea/CollisionShape2D/ShelterFloor"]
+color = Color(0.51, 0.65, 0.61, 1)
+polygon = PackedVector2Array(-15, -14, -7, -14, -7, -11, -12, -11, -12, 11, -7, 11, -7, 14, -15, 14)
+
+[node name="RightWall" type="Polygon2D" parent="InteractionZones/AirlockArea/CollisionShape2D/ShelterFloor"]
+color = Color(0.51, 0.65, 0.61, 1)
+polygon = PackedVector2Array(15, -14, 7, -14, 7, -11, 12, -11, 12, 11, 7, 11, 7, 14, 15, 14)
+
+[node name="Thresholds" type="Line2D" parent="InteractionZones/AirlockArea/CollisionShape2D/ShelterFloor"]
+points = PackedVector2Array(-7, -12, 7, -12)
+width = 1.0
+default_color = Color(0.56, 0.9, 0.73, 1)
+
+[node name="SouthThreshold" type="Line2D" parent="InteractionZones/AirlockArea/CollisionShape2D/ShelterFloor"]
+points = PackedVector2Array(-7, 12, 7, 12)
+width = 1.0
+default_color = Color(0.56, 0.9, 0.73, 1)
+
+[node name="Shield" type="Polygon2D" parent="InteractionZones/AirlockArea/CollisionShape2D/ShelterFloor"]
+color = Color(0.54, 0.87, 0.7, 1)
+polygon = PackedVector2Array(0, -7, 6, -4, 5, 2, 0, 7, -5, 2, -6, -4)
+
 [node name="ReactoresArea" type="Area2D" parent="InteractionZones" unique_id=1414059884]
 position = Vector2(380, 100)
 
@@ -401,12 +445,7 @@ horizontal_alignment = 1
 
 [node name="TerminalScreen" parent="." instance=ExtResource("9_terminal")]
 
-[node name="ShelterFloor" type="Polygon2D" parent="."]
-position = Vector2(405, 288)
-color = Color(0.22, 0.47, 0.41, 0.8)
-polygon = PackedVector2Array(-12, -12, 12, -12, 12, 12, -12, 12)
-
-[node name="ShelterSign" type="Label" parent="ShelterFloor"]
+[node name="ShelterSign" type="Label" parent="InteractionZones/AirlockArea/CollisionShape2D/ShelterFloor"]
 offset_left = -34.0
 offset_top = -24.0
 offset_right = 34.0
