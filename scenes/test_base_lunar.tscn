@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://d1k7s4nax2b3v"]
+
+[ext_resource type="Script" path="res://scripts/utils/test_base_lunar.gd" id="1_test_base"]
+
+[node name="TestBaseLunar" type="Node"]
+script = ExtResource("1_test_base")

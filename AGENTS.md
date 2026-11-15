@@ -19,3 +19,19 @@ Desarrollar un simulador interactivo donde los estudiantes administren una base 
 3. **Programador 3 (Arte Técnico):** Construye la UI, ensambla las escenas principales y vincula las señales visuales.
 4. **Expositora 1 (Game Design/Documentación):** Define las reglas matemáticas de los recursos, redacta la documentación técnica y el GDD.
 5. **Expositora 2 (UX/QA/Pitch):** Crea wireframes del dashboard, ejecuta pruebas de usabilidad y estructura el guion de presentación.
+
+## Sistema de Terminal del Centro de Mando (TerminalScreen)
+- **Disparador y Ubicación:** `BottomWallCommandCenter` (`Area2D` en `res://scenes/levels/BaseLunar.tscn` en la consola de mando frente al monitor de `scenescreen.png` en `X=448, Y=119`).
+- **Interacción y Controles:**
+  - Al entrar al área, se activa el indicador visual flotante `[E] TERMINAL`.
+  - Presionar `[E]` abre la terminal `TerminalScreen`.
+  - Presionar `[E]` nuevamente (o `[ESC]`) cierra y oculta la terminal.
+  - Al alejarse de la zona, la terminal se auto-cierra si estaba abierta.
+  - Mientras la terminal está desplegada, el movimiento del astronauta se pausa (`player.can_move = false`) para facilitar la lectura.
+- **Estética Retro CRT:**
+  - Marco de pantalla renderizado con `res://assets/sprites/Screen.png` (NinePatchRect con márgenes calibrados al bisel CRT).
+  - Tipografía monoespaciada (`SystemFont` Monospace / Courier) con fósforo verde terminal (`#00ff66`), fondo CRT verde oscuro (`#0d2700`) y acentos de alerta en ámbar (`#ffd91a`) y rojo (`#ff4040`).
+- **Integración de Datos:**
+  - **Misiones y Tareas:** Conectado a `TaskManager.gd` mediante `get_active_tasks_data()`, mostrando título, ID, ubicación, nivel de urgencia, descripción y tiempo límite restante.
+  - **Eventos y Clima Espacial:** Conectado a `EventManager.gd` y NASA DONKI/SWPC mediante `get_active_notices()`, telemetría de flujo solar en tiempo real (`pfu`), dosis simulada acumulada (`mSv`), estado de salida (`PERMITIDA`, `VIGILANCIA`, `SUSPENDIDA`, `RESTRINGIDA`) y orden activa de refugio.
+  - **Reloj de Misión:** Vinculado a `DayManager.gd` (`day_time_updated`) en formato `T+ MM:SS UTC`.

@@ -1,0 +1,147 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/TerminalScreen.gd" id="1_script"]
+[ext_resource type="Texture2D" uid="uid://dwsetl3ws6yp1" path="res://assets/sprites/Screen.png" id="2_screen"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_telemetry"]
+bg_color = Color(0.0156863, 0.0588235, 0.0156863, 0.85)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0, 0.8, 0.35, 0.6)
+content_margin_left = 6.0
+content_margin_top = 4.0
+content_margin_right = 6.0
+content_margin_bottom = 4.0
+
+[node name="TerminalScreen" type="CanvasLayer"]
+layer = 100
+script = ExtResource("1_script")
+
+[node name="Dimmer" type="ColorRect" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.45)
+
+[node name="ScreenFrame" type="NinePatchRect" parent="."]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -370.0
+offset_top = -240.0
+offset_right = 370.0
+offset_bottom = 240.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("2_screen")
+patch_margin_left = 11
+patch_margin_top = 5
+patch_margin_right = 11
+patch_margin_bottom = 10
+
+[node name="MarginContainer" type="MarginContainer" parent="ScreenFrame"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 18.0
+offset_top = 10.0
+offset_right = -18.0
+offset_bottom = -16.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBox" type="VBoxContainer" parent="ScreenFrame/MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="Header" type="HBoxContainer" parent="ScreenFrame/MarginContainer/VBox"]
+layout_mode = 2
+
+[node name="TitleLabel" type="Label" parent="ScreenFrame/MarginContainer/VBox/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "> OUTERBASE TERMINAL OS v2.6 // CENTRO DE MANDO"
+
+[node name="ClockLabel" type="Label" parent="ScreenFrame/MarginContainer/VBox/Header"]
+layout_mode = 2
+text = "T+ 00:00 UTC"
+
+[node name="StatusBadgeLabel" type="Label" parent="ScreenFrame/MarginContainer/VBox/Header"]
+layout_mode = 2
+text = "[ESTADO: PERMITIDA]"
+
+[node name="HSeparator1" type="ColorRect" parent="ScreenFrame/MarginContainer/VBox"]
+custom_minimum_size = Vector2(0, 2)
+layout_mode = 2
+color = Color(0, 0.784314, 0.352941, 0.6)
+
+[node name="MainSplit" type="HBoxContainer" parent="ScreenFrame/MarginContainer/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 12
+
+[node name="MissionsColumn" type="VBoxContainer" parent="ScreenFrame/MarginContainer/VBox/MainSplit"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 4
+
+[node name="MissionsHeader" type="Label" parent="ScreenFrame/MarginContainer/VBox/MainSplit/MissionsColumn"]
+layout_mode = 2
+text = "=== [ MISIONES Y TAREAS ACTIVAS ] ==="
+
+[node name="MissionsScroll" type="ScrollContainer" parent="ScreenFrame/MarginContainer/VBox/MainSplit/MissionsColumn"]
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="MissionsVBox" type="VBoxContainer" parent="ScreenFrame/MarginContainer/VBox/MainSplit/MissionsColumn/MissionsScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+
+[node name="EventsColumn" type="VBoxContainer" parent="ScreenFrame/MarginContainer/VBox/MainSplit"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 4
+
+[node name="EventsHeader" type="Label" parent="ScreenFrame/MarginContainer/VBox/MainSplit/EventsColumn"]
+layout_mode = 2
+text = "=== [ EVENTOS Y CLIMA ESPACIAL ] ==="
+
+[node name="TelemetryBox" type="PanelContainer" parent="ScreenFrame/MarginContainer/VBox/MainSplit/EventsColumn"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_telemetry")
+
+[node name="TelemetryLabel" type="Label" parent="ScreenFrame/MarginContainer/VBox/MainSplit/EventsColumn/TelemetryBox"]
+layout_mode = 2
+text = "CARGANDO TELEMETRÍA..."
+
+[node name="NoticesScroll" type="ScrollContainer" parent="ScreenFrame/MarginContainer/VBox/MainSplit/EventsColumn"]
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="NoticesVBox" type="VBoxContainer" parent="ScreenFrame/MarginContainer/VBox/MainSplit/EventsColumn/NoticesScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+
+[node name="HSeparator2" type="ColorRect" parent="ScreenFrame/MarginContainer/VBox"]
+custom_minimum_size = Vector2(0, 2)
+layout_mode = 2
+color = Color(0, 0.784314, 0.352941, 0.6)
+
+[node name="Footer" type="HBoxContainer" parent="ScreenFrame/MarginContainer/VBox"]
+layout_mode = 2
+
+[node name="FooterHintLabel" type="Label" parent="ScreenFrame/MarginContainer/VBox/Footer"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "[E] CERRAR TERMINAL | [ESC] SALIR | CONEXIÓN CON ESTACIÓN NOMINAL"

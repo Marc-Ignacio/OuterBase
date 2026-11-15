@@ -31,9 +31,11 @@ signal shelter_state_changed(is_sheltered: bool)
 # ==============================================================================
 
 @export var needs_component: AstronautNeeds
+@export var animated_sprite: AnimatedSprite2D
 
 var speed_multiplier: float = 1.0
 var is_sheltered: bool = true
+var can_move: bool = true
 
 # ==============================================================================
 # CICLO DE VIDA
@@ -43,6 +45,8 @@ func _ready() -> void:
 	# Buscar el componente como hijo si no fue asignado en el Inspector
 	if not needs_component:
 		needs_component = get_node_or_null("AstronautNeeds")
+	if not animated_sprite:
+		animated_sprite = get_node_or_null("AnimatedSprite2D")
 	
 	if needs_component:
 		needs_component.speed_multiplier_changed.connect(_on_speed_multiplier_changed)
@@ -51,9 +55,18 @@ func _ready() -> void:
 	is_sheltered = starts_sheltered
 	if has_node("/root/EventManager"):
 		get_node("/root/EventManager").set_player_sheltered(is_sheltered)
+		
+	if animated_sprite and animated_sprite.sprite_frames and animated_sprite.sprite_frames.has_animation("idle"):
+		animated_sprite.play("idle")
 
 
 func _physics_process(_delta: float) -> void:
+	if not can_move:
+		velocity = Vector2.ZERO
+		move_and_slide()
+		_update_animation(Vector2.ZERO)
+		return
+		
 	var direction := Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")
 	
 	# La velocidad se escala con el multiplicador calculado por el estado biológico
@@ -61,6 +74,24 @@ func _physics_process(_delta: float) -> void:
 	velocity = direction * current_speed
 	
 	move_and_slide()
+	
+	_update_animation(direction)
+
+
+func _update_animation(direction: Vector2) -> void:
+	if not animated_sprite or not animated_sprite.sprite_frames:
+		return
+		
+	if direction.length_squared() > 0.001:
+		if animated_sprite.sprite_frames.has_animation("walk"):
+			animated_sprite.play("walk")
+		if direction.x < 0.0:
+			animated_sprite.flip_h = true
+		elif direction.x > 0.0:
+			animated_sprite.flip_h = false
+	else:
+		if animated_sprite.sprite_frames.has_animation("idle"):
+			animated_sprite.play("idle")
 
 # ==============================================================================
 # GESTIÓN DE REFUGIO Y SALIDA (ESCLUSA / AIRLOCK)
