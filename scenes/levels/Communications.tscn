@@ -31,6 +31,12 @@ mouse_filter = 2
 [node name="FlareTimer" type="Timer" parent="."]
 one_shot = true
 
+[node name="ReportTimer" type="Timer" parent="."]
+one_shot = true
+
+[node name="FeedbackTimer" type="Timer" parent="."]
+one_shot = true
+
 [node name="HUD" type="CanvasLayer" parent="."]
 layer = 101
 
@@ -45,6 +51,22 @@ theme_override_styles/panel = SubResource("AlertStyle")
 
 [node name="Message" type="Label" parent="HUD/Alert"]
 layout_mode = 2
+mouse_filter = 2
+autowrap_mode = 3
+horizontal_alignment = 1
+
+[node name="ReportMessage" type="Label" parent="HUD"]
+visible = false
+anchor_left = 0.1
+anchor_top = 1.0
+anchor_right = 0.9
+anchor_bottom = 1.0
+offset_top = -52.0
+offset_bottom = -24.0
+theme_override_colors/font_color = Color(0.77, 1, 0.86, 1)
+theme_override_colors/font_shadow_color = Color(0.04, 0.07, 0.12, 1)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 2
 mouse_filter = 2
 autowrap_mode = 3
 horizontal_alignment = 1

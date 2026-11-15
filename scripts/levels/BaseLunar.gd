@@ -36,6 +36,7 @@ const DEVICE_GREENHOUSE := "Invernadero"
 const DEVICE_WATER := "Tanque H₂O"
 const DEVICE_OXYGEN := "Tanque O₂"
 const DEVICE_COMMUNICATIONS := "Panel COM"
+const REFUGE_ZONE := "Esclusa"
 const DEMO_TIME_MULTIPLIER := 2.0
 const WATER_LEAK_SECOND := 25.0 * DEMO_TIME_MULTIPLIER
 const DEVICE_LABELS := {
@@ -57,6 +58,8 @@ var _trained_today := false
 var _filter_pending := false
 var _water_leak_triggered := false
 var _day_succeeded := false
+var _refuge_seconds := 0.0
+var _last_day_remaining := 0.0
 
 # ==============================================================================
 # CICLO DE VIDA
@@ -66,9 +69,8 @@ func _ready() -> void:
 	if player and spawn_marker:
 		player.global_position = spawn_marker.global_position
 		
-	# Asegurar que el astronauta inicie protegido en el refugio
-	if has_node("/root/EventManager"):
-		get_node("/root/EventManager").set_player_sheltered(true)
+	# El punto de inicio está en el centro de mando, fuera del refugio blindado.
+	player.leave_shelter_for_work_zone()
 		
 	# Sincronizar límites de cámara para seguir al jugador vertical y horizontalmente en la base
 	if player and player.has_node("Camera2D"):
@@ -85,6 +87,9 @@ func _ready() -> void:
 	_connect_life_support()
 	communications.status_changed.connect(terminal_screen.update_communications)
 	communications.report_result.connect(terminal_screen.show_life_support_result)
+	communications.report_result.connect(func(message: String, _success: bool):
+		if _prompt_device == DEVICE_COMMUNICATIONS:
+			_prompt_feedback = message)
 	terminal_screen.report_requested.connect(communications.send_report)
 	communications.publish_status()
 	DayManager.set_day_duration(DEMO_DAY_SECONDS)
@@ -119,6 +124,7 @@ func _connect_life_support() -> void:
 	DayManager.day_survived.connect(_show_day_result)
 	DayManager.day_started.connect(_reset_daily_objectives)
 	DayManager.day_time_updated.connect(_schedule_water_leak)
+	DayManager.day_time_updated.connect(_track_refuge_time)
 	ResourceManager.resource_updated.connect(func(resource: StringName, _amount: float):
 		if resource == ResourceManager.RES_OXYGEN:
 			_update_oxygen_tank())
@@ -159,12 +165,20 @@ func _update_oxygen_tank() -> void:
 
 
 func _reset_daily_objectives(day: int) -> void:
+	_refuge_seconds = 0.0
+	_last_day_remaining = DayManager.get_time_remaining()
 	_ate_today = false
 	_drank_today = false
 	_trained_today = false
 	_day_succeeded = false
 	terminal_screen.show_open_day(day)
 	_update_daily_objectives()
+
+
+func _track_refuge_time(remaining: float, _duration: float) -> void:
+	if player.is_in_shelter() and EventManager.get_exit_restriction_name() == "SUSPENDIDA":
+		_refuge_seconds += maxf(0.0, _last_day_remaining - remaining)
+	_last_day_remaining = remaining
 
 
 func _update_daily_objectives() -> void:
@@ -182,7 +196,7 @@ func _show_day_result() -> void:
 	if _filter_pending:
 		pending.append("cambiar el filtro")
 	_day_succeeded = pending.is_empty()
-	terminal_screen.show_closed_day(pending)
+	terminal_screen.show_closed_day(pending, _refuge_seconds)
 	open_terminal()
 
 
@@ -200,7 +214,7 @@ func _retry_demo() -> void:
 	ResourceManager.reset_reserves()
 	EnergyEconomy.reset_battery()
 	BaseFSM.change_state(BaseFSM.BaseState.NORMAL)
-	player.enter_shelter()
+	player.leave_shelter_for_work_zone()
 	player.needs_component.reset_mission_supplies()
 	greenhouse.reset_crop()
 	close_terminal()
@@ -223,7 +237,7 @@ func _connect_interaction_areas() -> void:
 		["WaterTankArea", DEVICE_WATER],
 		["OxygenTankArea", DEVICE_OXYGEN],
 		["CommunicationsArea", DEVICE_COMMUNICATIONS],
-		["AirlockArea", "Esclusa"],
+		["AirlockArea", REFUGE_ZONE],
 		["BottomWallCommandCenter", "BottomWallCommandCenter"]
 	]
 	
@@ -243,6 +257,8 @@ func _connect_interaction_areas() -> void:
 
 
 func _handle_zone_entered(zone_name: String, area: Area2D) -> void:
+	if zone_name == REFUGE_ZONE:
+		player.enter_shelter()
 	if DEVICE_LABELS.has(zone_name):
 		_nearby_devices[zone_name] = area.get_node("CollisionShape2D")
 	if zone_name == DEVICE_TERMINAL:
@@ -251,6 +267,8 @@ func _handle_zone_entered(zone_name: String, area: Area2D) -> void:
 
 
 func _handle_zone_exited(zone_name: String) -> void:
+	if zone_name == REFUGE_ZONE:
+		player.leave_shelter_for_work_zone()
 	_nearby_devices.erase(zone_name)
 	if zone_name == DEVICE_TERMINAL:
 		_in_terminal_area = false

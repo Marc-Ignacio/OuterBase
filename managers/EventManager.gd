@@ -145,11 +145,8 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	# 1. Simulación de dosis y temporizadores de refugio
 	if _flujo_pfu_actual > 0.0 or _exposicion_simulada_msv > 0.0:
-		var tasa_msv_s: float = 0.0
-		if not _is_player_sheltered:
-			# Fuera del refugio: acumula dosis según flujo observado
-			tasa_msv_s = (_flujo_pfu_actual / 100.0) * radiation_dose_factor
-			_exposicion_simulada_msv += tasa_msv_s * delta
+		var tasa_msv_s := get_simulated_dose_rate()
+		_exposicion_simulada_msv += tasa_msv_s * delta
 		radiation_exposure_updated.emit(_flujo_pfu_actual, _exposicion_simulada_msv, tasa_msv_s)
 	
 	# 2. Descuento del tiempo para regresar al refugio (si está fuera bajo suspensión)
@@ -468,6 +465,10 @@ func _set_estado_salida(nuevo_estado: ExitRestriction, motivo: String) -> void:
 ## Consulta si el astronauta se encuentra actualmente dentro del refugio protegido.
 func is_player_sheltered() -> bool:
 	return _is_player_sheltered
+
+
+func get_simulated_dose_rate() -> float:
+	return 0.0 if _is_player_sheltered else (_flujo_pfu_actual / 100.0) * radiation_dose_factor
 
 
 ## Define el estado de refugio del jugador.

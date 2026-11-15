@@ -106,6 +106,13 @@ func enter_shelter() -> bool:
 	return true
 
 
+## Desplazarse dentro de la base no es una salida EVA por la esclusa.
+func leave_shelter_for_work_zone() -> void:
+	is_sheltered = false
+	EventManager.set_player_sheltered(false)
+	shelter_state_changed.emit(false)
+
+
 ## Intenta salir al exterior (EVA). Bloqueado si la salida está suspendida por evento solar S3.
 func exit_to_exterior() -> bool:
 	if has_node("/root/EventManager"):

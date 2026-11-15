@@ -197,12 +197,13 @@ func show_open_day(day: int) -> void:
 	_retry_day_button.hide()
 
 
-func show_closed_day(pending: PackedStringArray) -> void:
+func show_closed_day(pending: PackedStringArray, refuge_seconds: float) -> void:
 	var success := pending.is_empty()
 	_life_support_controls.hide()
 	_finish_day_button.hide()
 	_day_result.text = "★ INSIGNIA · Día completado" if success else (
-		"Faltó %s. ¿Qué atenderías primero en el próximo intento?" % ", ".join(pending))
+		"Faltó %s." % ", ".join(pending))
+	_day_result.text += "\nTiempo en refugio durante la tormenta · %.1f s. ¿Qué prepararías antes de la próxima tormenta?" % refuge_seconds
 	_day_result.modulate = COLOR_PHOSPHOR_BRIGHT if success else COLOR_ALERT_YELLOW
 	_day_result.show()
 	_next_day_button.visible = success
@@ -357,7 +358,7 @@ func _connect_managers() -> void:
 		if em.has_signal("exit_restriction_changed"):
 			em.exit_restriction_changed.connect(func(_st, _re): if _is_open: _populate_events())
 		if em.has_signal("shelter_order_issued"):
-			em.shelter_order_issued.connect(func(_ord, _shel, _time): if _is_open: _populate_events())
+			em.shelter_order_issued.connect(func(_ord, _shel, _time): if _is_open: _update_telemetry())
 		if em.has_signal("radiation_exposure_updated"):
 			em.radiation_exposure_updated.connect(func(_fl, _do, _rt): if _is_open: _update_telemetry())
 		if em.has_signal("solar_calendar_restarted"):
@@ -572,11 +573,11 @@ func _update_telemetry() -> void:
 		exit_state = em.get_exit_restriction_name()
 		is_sheltered = em.is_player_sheltered()
 		
-	var shelter_desc = "En refugio" if is_sheltered else "En el exterior (EVA)"
+	var shelter_desc = "En refugio" if is_sheltered else "Fuera del refugio"
 	
 	var telemetry_text = (
 		"Salida · %s   |   %s\n" +
-		"Flujo · %.1f pfu (SWPC)   |   Dosis · %.4f mSv"
+		"Flujo · %.1f pfu (SWPC)   |   Dosis simulada · %.4f mSv"
 	) % [
 		exit_state,
 		shelter_desc,

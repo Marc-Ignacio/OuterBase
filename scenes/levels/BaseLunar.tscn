@@ -378,6 +378,21 @@ horizontal_alignment = 1
 
 [node name="TerminalScreen" parent="." instance=ExtResource("9_terminal")]
 
+[node name="ShelterFloor" type="Polygon2D" parent="."]
+position = Vector2(405, 288)
+color = Color(0.22, 0.47, 0.41, 0.8)
+polygon = PackedVector2Array(-12, -12, 12, -12, 12, 12, -12, 12)
+
+[node name="ShelterSign" type="Label" parent="ShelterFloor"]
+offset_left = -34.0
+offset_top = -24.0
+offset_right = 34.0
+theme_override_font_sizes/font_size = 8
+theme_override_colors/font_color = Color(0.73, 1, 0.79, 1)
+text = "REFUGIO"
+horizontal_alignment = 1
+mouse_filter = 2
+
 [node name="CommunicationsArea" type="Area2D" parent="InteractionZones"]
 position = Vector2(373, 86)
 
