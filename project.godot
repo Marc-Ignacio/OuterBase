@@ -12,7 +12,7 @@ config_version=5
 
 config/name="OuterBase"
 config/features=PackedStringArray("4.7", "GL Compatibility")
-config/icon="res://icon.svg"
+config/icon="res://assets/sprites/LOGO.png"
 
 [autoload]
 
@@ -22,11 +22,20 @@ EventManager="*res://managers/EventManager.gd"
 TaskManager="*res://managers/TaskManager.gd"
 DayManager="*res://managers/DayManager.gd"
 EnergyEconomy="*res://managers/EnergyEconomy.gd"
+_mcp_game_helper="*res://addons/godot_ai/runtime/game_helper.gd"
 
 [display]
 
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
+
+[dotnet]
+
+project/assembly_name="OuterBase"
+
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/godot_ai/plugin.cfg")
 
 [physics]
 
@@ -35,11 +44,11 @@ common/physics_interpolation=true
 
 [rendering]
 
-2d/snap/snap_2d_transforms_to_pixel=true
-2d/snap/snap_2d_vertices_to_pixel=true
 textures/canvas_textures/default_texture_filter=0
 rendering_device/driver.windows="d3d12"
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
 environment/ssao/blur_passes=0
 environment/ssil/blur_passes=0
+2d/snap/snap_2d_transforms_to_pixel=true
+2d/snap/snap_2d_vertices_to_pixel=true

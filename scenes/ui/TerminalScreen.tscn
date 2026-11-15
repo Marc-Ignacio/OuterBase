@@ -82,7 +82,7 @@ text = "Energía · 0 soles"
 
 [node name="StatusBadgeLabel" type="Label" parent="ScreenFrame/MarginContainer/VBox/Header"]
 layout_mode = 2
-text = "[ESTADO: PERMITIDA]"
+text = "Salida permitida"
 
 [node name="HSeparator1" type="ColorRect" parent="ScreenFrame/MarginContainer/VBox"]
 custom_minimum_size = Vector2(0, 2)
@@ -102,7 +102,7 @@ theme_override_constants/separation = 4
 [node name="MissionsHeader" type="Label" parent="ScreenFrame/MarginContainer/VBox/MainSplit/MissionsColumn"]
 layout_mode = 2
 autowrap_mode = 3
-text = "TAREAS ACTIVAS"
+text = "QUÉ HACER"
 
 [node name="MissionsScroll" type="ScrollContainer" parent="ScreenFrame/MarginContainer/VBox/MainSplit/MissionsColumn"]
 layout_mode = 2
@@ -122,7 +122,7 @@ theme_override_constants/separation = 4
 [node name="EventsHeader" type="Label" parent="ScreenFrame/MarginContainer/VBox/MainSplit/EventsColumn"]
 layout_mode = 2
 autowrap_mode = 3
-text = "CLIMA ESPACIAL"
+text = "Alertas del Sol"
 
 [node name="TelemetryBox" type="PanelContainer" parent="ScreenFrame/MarginContainer/VBox/MainSplit/EventsColumn"]
 layout_mode = 2

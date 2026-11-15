@@ -73,6 +73,8 @@ var _last_day_remaining := 0.0
 # ==============================================================================
 
 func _ready() -> void:
+	# Godot agrega (DEBUG) al asignar Window.title en una ejecución de prueba.
+	DisplayServer.window_set_title(str(ProjectSettings.get_setting("application/config/name")))
 	if player and spawn_marker:
 		player.global_position = spawn_marker.global_position
 		
@@ -236,7 +238,7 @@ func _update_command_shield() -> void:
 
 
 func _update_daily_objectives() -> void:
-	terminal_screen.update_daily_objectives(_water_restored, _report_confirmed)
+	terminal_screen.update_daily_objectives(_water_restored, _water_repaired_today, _report_confirmed)
 
 
 func _show_day_result() -> void:
