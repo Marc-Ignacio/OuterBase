@@ -67,6 +67,7 @@ layout_mode = 2
 [node name="TitleLabel" type="Label" parent="ScreenFrame/MarginContainer/VBox/Header"]
 layout_mode = 2
 size_flags_horizontal = 3
+autowrap_mode = 3
 text = "> OUTERBASE TERMINAL OS v2.6 // CENTRO DE MANDO"
 
 [node name="ClockLabel" type="Label" parent="ScreenFrame/MarginContainer/VBox/Header"]
@@ -94,6 +95,7 @@ theme_override_constants/separation = 4
 
 [node name="MissionsHeader" type="Label" parent="ScreenFrame/MarginContainer/VBox/MainSplit/MissionsColumn"]
 layout_mode = 2
+autowrap_mode = 3
 text = "=== [ MISIONES Y TAREAS ACTIVAS ] ==="
 
 [node name="MissionsScroll" type="ScrollContainer" parent="ScreenFrame/MarginContainer/VBox/MainSplit/MissionsColumn"]
@@ -113,6 +115,7 @@ theme_override_constants/separation = 4
 
 [node name="EventsHeader" type="Label" parent="ScreenFrame/MarginContainer/VBox/MainSplit/EventsColumn"]
 layout_mode = 2
+autowrap_mode = 3
 text = "=== [ EVENTOS Y CLIMA ESPACIAL ] ==="
 
 [node name="TelemetryBox" type="PanelContainer" parent="ScreenFrame/MarginContainer/VBox/MainSplit/EventsColumn"]
@@ -121,6 +124,7 @@ theme_override_styles/panel = SubResource("StyleBoxFlat_telemetry")
 
 [node name="TelemetryLabel" type="Label" parent="ScreenFrame/MarginContainer/VBox/MainSplit/EventsColumn/TelemetryBox"]
 layout_mode = 2
+autowrap_mode = 3
 text = "CARGANDO TELEMETRÍA..."
 
 [node name="NoticesScroll" type="ScrollContainer" parent="ScreenFrame/MarginContainer/VBox/MainSplit/EventsColumn"]
@@ -144,4 +148,5 @@ layout_mode = 2
 [node name="FooterHintLabel" type="Label" parent="ScreenFrame/MarginContainer/VBox/Footer"]
 layout_mode = 2
 size_flags_horizontal = 3
+autowrap_mode = 3
 text = "[E] CERRAR TERMINAL | [ESC] SALIR | CONEXIÓN CON ESTACIÓN NOMINAL"

@@ -34,6 +34,8 @@ const COLOR_PHOSPHOR_BRIGHT: Color = Color(0.5, 1.0, 0.7, 1.0)     # #80ffb3
 const COLOR_ALERT_YELLOW: Color = Color(1.0, 0.85, 0.1, 1.0)        # #ffd91a
 const COLOR_ALERT_RED: Color = Color(1.0, 0.25, 0.25, 1.0)          # #ff4040
 const COLOR_CRT_BG: Color = Color(0.05, 0.15, 0.0, 1.0)             # #0d2700
+const FRAME_SIZE := Vector2(740, 480)
+const VIEWPORT_MARGIN := 12.0
 const NASA_EXERCISE := "https://www.nasa.gov/missions/station/iss-research/astronaut-exercise/"
 const NASA_OSD_684 := "https://osdr.nasa.gov/bio/repo/data/studies/OSD-684"
 const NASA_WATER := "https://www.nasa.gov/missions/station/iss-research/nasa-achieves-water-recovery-milestone-on-international-space-station/"
@@ -79,9 +81,18 @@ var _retry_day_button: Button
 
 func _ready() -> void:
 	visible = false
+	get_viewport().size_changed.connect(_fit_screen_frame)
+	_fit_screen_frame()
 	_setup_fonts()
 	_connect_managers()
 	refresh()
+
+
+func _fit_screen_frame() -> void:
+	var available := get_viewport().get_visible_rect().size - Vector2.ONE * VIEWPORT_MARGIN * 2.0
+	var fit := clampf(minf(available.x / FRAME_SIZE.x, available.y / FRAME_SIZE.y), 0.01, 1.0)
+	screen_frame.pivot_offset = FRAME_SIZE * 0.5
+	screen_frame.scale = Vector2.ONE * fit
 
 
 func _setup_fonts() -> void:
@@ -133,7 +144,6 @@ func setup_life_support(grow_cost: float, recycle_cost: float) -> void:
 	_daily_objectives = _create_styled_label("", COLOR_PHOSPHOR_BRIGHT, 12)
 	section.add_child(_daily_objectives)
 	_day_result = _create_styled_label("", COLOR_PHOSPHOR_BRIGHT, 12)
-	_day_result.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	section.add_child(_day_result)
 	var day_actions := HBoxContainer.new()
 	section.add_child(day_actions)
@@ -305,7 +315,7 @@ func _connect_managers() -> void:
 		if em.has_signal("shelter_order_issued"):
 			em.shelter_order_issued.connect(func(_ord, _shel, _time): if _is_open: _populate_events())
 		if em.has_signal("radiation_exposure_updated"):
-			em.radiation_exposure_updated.connect(func(_fl, _do, _rt): if _is_open: _populate_events())
+			em.radiation_exposure_updated.connect(func(_fl, _do, _rt): if _is_open: _update_telemetry())
 		if em.has_signal("solar_calendar_restarted"):
 			em.solar_calendar_restarted.connect(func(): if _is_open: _populate_events())
 			
@@ -440,7 +450,6 @@ func _create_task_entry(task: Dictionary) -> PanelContainer:
 	
 	var desc_text = "> %s" % str(task.get("description", ""))
 	var desc_lbl = _create_styled_label(desc_text, COLOR_PHOSPHOR_DIM, 10)
-	desc_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	vbox.add_child(desc_lbl)
 	
 	var time_limit: float = float(task.get("time_limit", 0.0))
@@ -461,6 +470,7 @@ func _populate_events() -> void:
 		return
 		
 	for child in notices_vbox.get_children():
+		notices_vbox.remove_child(child)
 		child.queue_free()
 		
 	var notices: Array[Dictionary] = []
@@ -563,7 +573,6 @@ func _create_notice_entry(notice: Dictionary) -> PanelContainer:
 	
 	var msg_text = "> %s" % str(notice.get("mensaje", ""))
 	var msg_lbl = _create_styled_label(msg_text, COLOR_PHOSPHOR_BRIGHT, 10)
-	msg_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	vbox.add_child(msg_lbl)
 	
 	panel.add_child(vbox)
@@ -573,6 +582,7 @@ func _create_notice_entry(notice: Dictionary) -> PanelContainer:
 func _create_styled_label(text: String, color: Color, font_size: int = 11, is_bold: bool = false) -> Label:
 	var label = Label.new()
 	label.text = text
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.add_theme_font_override("font", _terminal_font)
 	label.add_theme_font_size_override("font_size", font_size)
 	label.modulate = color
