@@ -4,11 +4,15 @@ signal crop_status_changed(status: String)
 signal ration_harvested()
 
 const GROW_SECONDS := 6.0
+const GROWN_POT := preload("res://assets/sprites/macetaconcosoverde.png")
 
 @onready var _timer: Timer = $GrowthTimer
 @onready var _progress: ProgressBar = $Progress
 @onready var _ready_light: ColorRect = $ReadyLight
 @onready var _status: Label = $Status
+@onready var _bed_left: Sprite2D = $BedLeft
+@onready var _bed_right: Sprite2D = $BedRight
+@onready var _empty_pot := _bed_left.texture
 
 var _harvest_ready := false
 
@@ -42,6 +46,8 @@ func _process(_delta: float) -> void:
 
 func _on_crop_ready() -> void:
 	_harvest_ready = true
+	_bed_left.texture = GROWN_POT
+	_bed_right.texture = GROWN_POT
 	_ready_light.color = Color("#66f38a")
 	_progress.hide()
 	set_process(false)
@@ -51,6 +57,8 @@ func _on_crop_ready() -> void:
 func reset_crop() -> void:
 	_timer.stop()
 	_harvest_ready = false
+	_bed_left.texture = _empty_pot
+	_bed_right.texture = _empty_pot
 	_ready_light.color = Color("#335244")
 	_progress.hide()
 	set_process(false)
