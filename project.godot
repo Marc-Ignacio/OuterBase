@@ -20,6 +20,8 @@ BaseFSM="*res://managers/BaseFSM.gd"
 ResourceManager="*res://managers/ResourceManager.gd"
 EventManager="*res://managers/EventManager.gd"
 TaskManager="*res://managers/TaskManager.gd"
+DayManager="*res://managers/DayManager.gd"
+EnergyEconomy="*res://managers/EnergyEconomy.gd"
 
 [display]
 

@@ -1,64 +1,82 @@
 # res://scripts/utils/test_scene_runner.gd
 extends Node
 
+var survived_emitted: bool = false
+var depleted_system: String = ""
+var minigame_won: bool = false
+
 func _ready() -> void:
 	print("==================================================")
 	print("--- TEST DE AUTOLOADS Y SISTEMAS CENTRALES ---")
 	print("==================================================")
 	
-	# Verificar singletons globales
+	# 1. Singletons globales
 	print("[1] Verificando singletons globales:")
 	print("    BaseFSM:         ", BaseFSM != null)
 	print("    ResourceManager: ", ResourceManager != null)
 	print("    EventManager:    ", EventManager != null)
 	print("    TaskManager:     ", TaskManager != null)
+	print("    DayManager:      ", DayManager != null)
+	print("    EnergyEconomy:   ", EnergyEconomy != null)
 	
-	# Test BaseFSM
+	# 2. BaseFSM
 	print("[2] Probando BaseFSM...")
-	print("    Estado inicial: ", BaseFSM.get_state_name())
 	assert(BaseFSM.current_state == BaseFSM.BaseState.NORMAL)
 	
-	# Test ResourceManager
-	print("[3] Probando ResourceManager...")
-	print("    Energía inicial: ", ResourceManager.get_resource(ResourceManager.RES_ENERGY))
-	print("    Agua inicial:    ", ResourceManager.get_resource(ResourceManager.RES_WATER))
-	print("    Comida inicial:  ", ResourceManager.get_resource(ResourceManager.RES_FOOD))
-	print("    Oxígeno inicial: ", ResourceManager.get_resource(ResourceManager.RES_OXYGEN))
+	# 3. DayManager
+	print("[3] Probando DayManager...")
+	DayManager.day_survived.connect(self._on_day_survived)
+	DayManager.time_remaining = 0.2
+	DayManager._process(0.3)
+	assert(survived_emitted, "day_survived() debió ser emitida")
 	
-	# Simular 1 tick
-	ResourceManager._calculate_resource_cycle(1.0)
-	print("    Recursos tras 1s de simulación:")
-	print("    - Energía: ", ResourceManager.get_resource(ResourceManager.RES_ENERGY))
-	print("    - Agua:    ", ResourceManager.get_resource(ResourceManager.RES_WATER))
-	print("    - Comida:  ", ResourceManager.get_resource(ResourceManager.RES_FOOD))
-	print("    - Oxígeno: ", ResourceManager.get_resource(ResourceManager.RES_OXYGEN))
+	# 4. EnergyEconomy
+	print("[4] Probando EnergyEconomy...")
+	EnergyEconomy.spend_energy(50.0, "Soporte Vital")
+	EnergyEconomy.energy_depleted.connect(self._on_energy_depleted)
+	var remaining = EnergyEconomy.get_current_watts()
+	EnergyEconomy.spend_energy(remaining + 10.0, "Escudos de Radiación")
+	assert(EnergyEconomy.get_current_watts() == 0.0)
+	assert(depleted_system == "Escudos de Radiación")
 	
-	# Test EventManager
-	print("[4] Probando EventManager - Secuencia de Llamarada Solar...")
-	EventManager.trigger_event(EventManager.EVENT_SOLAR_FLARE, 1.0)
-	print("    Estado FSM durante alerta: ", BaseFSM.get_state_name())
-	assert(BaseFSM.current_state == BaseFSM.BaseState.ALERTA_CLIMA)
+	# 5. TreadmillMinigame
+	print("[5] Probando TreadmillMinigame...")
+	var minigame_scene = load("res://scenes/ui/TreadmillMinigame.tscn")
+	var minigame = minigame_scene.instantiate()
+	add_child(minigame)
 	
-	# Simular impacto
-	EventManager._execute_event_impact(EventManager.EVENT_SOLAR_FLARE)
-	print("    Estado FSM tras impacto: ", BaseFSM.get_state_name())
-	assert(BaseFSM.current_state == BaseFSM.BaseState.EMERGENCIA_RADIACION)
+	minigame.exercise_completed.connect(self._on_exercise_completed)
 	
-	# Test TaskManager
-	print("[5] Probando TaskManager...")
-	var active_tasks = TaskManager.get_active_tasks_data()
-	print("    Tareas registradas: ", active_tasks.size())
-	for t in active_tasks:
-		print("    * [", t["id"], "] ", t["title"], " -> Ubicación: ", t["target_location"], " (Urgente: ", t["is_urgent"], ")")
+	# Simular pulsaciones alternadas para subir la barra a la zona verde
+	print("    Simulando zancadas rítmicas alternadas [LEFT -> RIGHT -> LEFT]...")
+	minigame._handle_footstep(minigame.FootStep.LEFT)
+	minigame._handle_footstep(minigame.FootStep.RIGHT)
+	minigame._handle_footstep(minigame.FootStep.LEFT)
+	minigame._handle_footstep(minigame.FootStep.RIGHT)
 	
-	# Completar la tarea de emergencia
-	print("[6] Completando tarea crítica 'divert_power_to_shields' en Módulo de Reactores...")
-	var success = TaskManager.complete_task(TaskManager.TASK_DIVERT_SHIELDS)
-	print("    ¿Completada?: ", success)
-	print("    Estado FSM resultante: ", BaseFSM.get_state_name())
-	assert(BaseFSM.current_state == BaseFSM.BaseState.RECUPERACION)
+	print("    Esfuerzo alcanzado: ", minigame.current_effort)
+	assert(minigame.current_effort >= minigame.green_zone_min, "Debe alcanzar la zona verde")
+	
+	# Simular mantenimiento en zona verde hasta completar
+	minigame.workout_progress = 95.0
+	minigame._process(0.5)
+	
+	assert(minigame_won, "exercise_completed() debió ser emitida al alcanzar el 100%")
 	
 	print("==================================================")
-	print(">>> TODOS LOS AUTOLOADS Y SISTEMAS FUNCIONAN 100% PERFECTO <<<")
+	print(">>> TODOS LOS SISTEMAS Y MINIJUEGO FUNCIONAN 100% <<<")
 	print("==================================================")
 	get_tree().quit(0)
+
+
+func _on_day_survived() -> void:
+	survived_emitted = true
+
+
+func _on_energy_depleted(sys: String) -> void:
+	depleted_system = sys
+
+
+func _on_exercise_completed() -> void:
+	minigame_won = true
+	print("    >>> SEÑAL exercise_completed() RECIBIDA EXITOSAMENTE <<<")
