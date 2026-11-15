@@ -33,10 +33,10 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -370.0
-offset_top = -240.0
-offset_right = 370.0
-offset_bottom = 240.0
+offset_left = -500.0
+offset_top = -300.0
+offset_right = 500.0
+offset_bottom = 300.0
 grow_horizontal = 2
 grow_vertical = 2
 texture = ExtResource("2_screen")
@@ -68,11 +68,17 @@ layout_mode = 2
 layout_mode = 2
 size_flags_horizontal = 3
 autowrap_mode = 3
-text = "> OUTERBASE TERMINAL OS v2.6 // CENTRO DE MANDO"
+text = "OUTERBASE · CENTRO DE MANDO"
 
 [node name="ClockLabel" type="Label" parent="ScreenFrame/MarginContainer/VBox/Header"]
 layout_mode = 2
-text = "T+ 00:00 UTC"
+text = "Quedan 00:00"
+
+[node name="EnergyLabel" type="Label" parent="ScreenFrame/MarginContainer/VBox/Header"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.95, 0.9, 0.52, 1)
+theme_override_font_sizes/font_size = 13
+text = "Energía · 0 soles"
 
 [node name="StatusBadgeLabel" type="Label" parent="ScreenFrame/MarginContainer/VBox/Header"]
 layout_mode = 2
@@ -96,7 +102,7 @@ theme_override_constants/separation = 4
 [node name="MissionsHeader" type="Label" parent="ScreenFrame/MarginContainer/VBox/MainSplit/MissionsColumn"]
 layout_mode = 2
 autowrap_mode = 3
-text = "=== [ MISIONES Y TAREAS ACTIVAS ] ==="
+text = "TAREAS ACTIVAS"
 
 [node name="MissionsScroll" type="ScrollContainer" parent="ScreenFrame/MarginContainer/VBox/MainSplit/MissionsColumn"]
 layout_mode = 2
@@ -116,7 +122,7 @@ theme_override_constants/separation = 4
 [node name="EventsHeader" type="Label" parent="ScreenFrame/MarginContainer/VBox/MainSplit/EventsColumn"]
 layout_mode = 2
 autowrap_mode = 3
-text = "=== [ EVENTOS Y CLIMA ESPACIAL ] ==="
+text = "CLIMA ESPACIAL"
 
 [node name="TelemetryBox" type="PanelContainer" parent="ScreenFrame/MarginContainer/VBox/MainSplit/EventsColumn"]
 layout_mode = 2
@@ -149,4 +155,4 @@ layout_mode = 2
 layout_mode = 2
 size_flags_horizontal = 3
 autowrap_mode = 3
-text = "[E] CERRAR TERMINAL | [ESC] SALIR | CONEXIÓN CON ESTACIÓN NOMINAL"
+text = "[E] / [ESC] Cerrar terminal"

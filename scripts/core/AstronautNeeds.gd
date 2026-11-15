@@ -88,6 +88,7 @@ var current_speed_multiplier: float = 1.0
 var _mission_life_support := false
 var _previous_remaining := 0.0
 var _pending_mission_seconds := 0.0
+var _mission_tick_interval := MISSION_TICK_SECONDS
 var _rations := 1
 var _drinking_water := 1
 
@@ -124,10 +125,11 @@ func _process(delta: float) -> void:
 	needs_updated.emit(nutrition, hygiene, bone_density)
 
 
-func enable_mission_life_support() -> void:
+func enable_mission_life_support(time_multiplier: float = 1.0) -> void:
 	if _mission_life_support:
 		return
 	_mission_life_support = true
+	_mission_tick_interval = MISSION_TICK_SECONDS * time_multiplier
 	set_process(false)
 	_previous_remaining = DayManager.get_time_remaining()
 	DayManager.day_time_updated.connect(_on_mission_time_updated)
@@ -152,10 +154,10 @@ func _on_mission_time_updated(remaining: float, _total: float) -> void:
 	else:
 		_pending_mission_seconds += _previous_remaining - remaining
 	_previous_remaining = remaining
-	var ticks := floori(_pending_mission_seconds / MISSION_TICK_SECONDS)
+	var ticks := floori(_pending_mission_seconds / _mission_tick_interval)
 	if ticks == 0:
 		return
-	_pending_mission_seconds -= ticks * MISSION_TICK_SECONDS
+	_pending_mission_seconds -= ticks * _mission_tick_interval
 	nutrition = maxf(0.0, nutrition - 10.0 * ticks)
 	hygiene = maxf(0.0, hygiene - 15.0 * ticks)
 	bone_density = maxf(0.0, bone_density - bone_density_decay_rate * MISSION_TICK_SECONDS * ticks)
@@ -195,17 +197,14 @@ func drink_water() -> void:
 	water_drunk.emit()
 
 
-func grow_ration() -> void:
-	if not _try_spend_energy(GROW_ENERGY_COST, "Cultivar"):
-		return
+func harvest_ration() -> void:
 	_rations += 1
 	supplies_updated.emit(_rations, _drinking_water)
-	supply_action_finished.emit("Ración cultivada", true)
 
 
 func recycle_water() -> void:
 	if TaskManager.is_task_active(TaskManager.TASK_CLEAN_O2_FILTERS):
-		supply_action_finished.emit("Cambia el filtro antes de reciclar", false)
+		supply_action_finished.emit("Repara el tanque H₂O antes de reciclar", false)
 		return
 	if not _try_spend_energy(RECYCLE_ENERGY_COST, "Reciclar agua"):
 		return
@@ -214,18 +213,29 @@ func recycle_water() -> void:
 	supply_action_finished.emit("Agua reciclada", true)
 
 
-func change_filter() -> void:
+func repair_water_tank() -> String:
 	if not TaskManager.is_task_active(TaskManager.TASK_CLEAN_O2_FILTERS):
-		return
-	if _try_spend_energy(FILTER_ENERGY_COST, "Cambiar filtro"):
-		if TaskManager.complete_task(TaskManager.TASK_CLEAN_O2_FILTERS):
-			supply_action_finished.emit("Filtro cambiado · Reciclaje disponible", true)
+		return "H₂O estable"
+	if not _try_spend_energy(FILTER_ENERGY_COST, "Reparar tanque H₂O"):
+		return EnergyEconomy.format_shortfall(FILTER_ENERGY_COST)
+	TaskManager.complete_task(TaskManager.TASK_CLEAN_O2_FILTERS)
+	supply_action_finished.emit("H₂O reparado · Reciclaje disponible", true)
+	return "Reparado · Filtro cambiado"
+
+
+func inspect_or_repair_oxygen_tank() -> String:
+	if not ResourceManager.has_oxygen_leak():
+		return "O₂ estable · %.0f unidades" % ResourceManager.get_resource(ResourceManager.RES_OXYGEN)
+	if not _try_spend_energy(FILTER_ENERGY_COST, "Reparar tanque O₂"):
+		return EnergyEconomy.format_shortfall(FILTER_ENERGY_COST)
+	ResourceManager.set_oxygen_leak_active(false)
+	return "O₂ reparado"
 
 
 func _try_spend_energy(cost: float, action: String) -> bool:
-	if EnergyEconomy.can_afford_energy(cost) and EnergyEconomy.spend_energy(cost, action):
+	if EnergyEconomy.try_spend_energy(cost, action):
 		return true
-	supply_action_finished.emit("Falta energía", false)
+	supply_action_finished.emit(EnergyEconomy.format_shortfall(cost), false)
 	return false
 
 # ==============================================================================

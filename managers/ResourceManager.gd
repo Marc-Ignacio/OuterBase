@@ -11,6 +11,7 @@ extends Node
 
 ## Emitida cada vez que la cantidad de un recurso cambia en el ciclo o por acción externa.
 signal resource_updated(type: StringName, amount: float)
+signal oxygen_leak_changed(active: bool)
 
 ## Emitida cuando un recurso cruza hacia abajo el umbral crítico de reserva.
 signal resource_critical(type: StringName)
@@ -36,20 +37,16 @@ const RES_OXYGEN: StringName = &"oxygen"
 @export_range(0.1, 5.0, 0.1) var tick_rate: float = 1.0
 
 @export_group("Capacidades Máximas de Almacenamiento")
-@export var max_energy: float = 1000.0
 @export var max_water: float = 500.0
 @export var max_food: float = 300.0
 @export var max_oxygen: float = 1000.0
 
 @export_group("Valores Iniciales")
-@export var initial_energy: float = 800.0
 @export var initial_water: float = 400.0
 @export var initial_food: float = 250.0
 @export var initial_oxygen: float = 900.0
 
 @export_group("Generación Base (por segundo)")
-## Energía generada por el arreglo de paneles solares (+X/s).
-@export var solar_energy_generation: float = 18.0
 ## Comida producida por el módulo de cultivo (+Y/s).
 @export var greenhouse_food_generation: float = 1.5
 ## Oxígeno producido por la fotosíntesis del invernadero (+Z/s).
@@ -80,7 +77,6 @@ const RES_OXYGEN: StringName = &"oxygen"
 # ==============================================================================
 
 var _resources: Dictionary = {
-	RES_ENERGY: 0.0,
 	RES_WATER: 0.0,
 	RES_FOOD: 0.0,
 	RES_OXYGEN: 0.0
@@ -94,6 +90,7 @@ var _critical_state: Dictionary = {
 }
 
 var _tick_timer: Timer
+var _oxygen_leak_active := false
 
 # Modificadores temporales aplicados por tareas u otros sistemas
 var life_support_efficiency_bonus: float = 1.0
@@ -105,6 +102,7 @@ var greenhouse_efficiency_bonus: float = 1.0
 
 func _ready() -> void:
 	reset_reserves()
+	_connect_shared_energy.call_deferred()
 
 	_tick_timer = Timer.new()
 	_tick_timer.name = "ResourceTickTimer"
@@ -116,7 +114,7 @@ func _ready() -> void:
 
 
 func reset_reserves() -> void:
-	_resources[RES_ENERGY] = clampf(initial_energy, 0.0, max_energy)
+	set_oxygen_leak_active(false)
 	_resources[RES_WATER] = clampf(initial_water, 0.0, max_water)
 	_resources[RES_FOOD] = clampf(initial_food, 0.0, max_food)
 	_resources[RES_OXYGEN] = clampf(initial_oxygen, 0.0, max_oxygen)
@@ -129,12 +127,22 @@ func reset_reserves() -> void:
 	_emit_all_resources()
 
 
+func _connect_shared_energy() -> void:
+	EnergyEconomy.energy_updated.connect(_on_shared_energy_updated)
+	_on_shared_energy_updated(EnergyEconomy.get_current_watts(), EnergyEconomy.get_max_watts())
+
+
+func _on_shared_energy_updated(current: float, _capacity: float) -> void:
+	resource_updated.emit(RES_ENERGY, current)
+
+
 # ==============================================================================
 # CÁLCULO MATEMÁTICO DEL CICLO (CADA SEGUNDO)
 # ==============================================================================
 
 func _on_tick_timeout() -> void:
-	_calculate_resource_cycle(tick_rate)
+	if DayManager.is_running:
+		_calculate_resource_cycle(tick_rate)
 
 
 func _calculate_resource_cycle(delta_time: float) -> void:
@@ -155,39 +163,23 @@ func _calculate_resource_cycle(delta_time: float) -> void:
 			is_emergency = (fsm.current_state == BaseFSM.BaseState.EMERGENCIA_RADIACION)
 
 	# -------------------------------------------------------------------------
-	# 2. GENERACIÓN DE ENERGÍA (Paneles Solares)
+	# 2. Potencia solar de uso directo. EnergyEconomy acredita el excedente.
 	# -------------------------------------------------------------------------
-	var energy_produced: float = solar_energy_generation * production_multiplier * delta_time
+	var direct_power := EnergyEconomy.get_operating_solar_power() * production_multiplier * delta_time
 	
 	# -------------------------------------------------------------------------
 	# 3. CONSUMOS DE ENERGÍA INTERDEPENDIENTES
 	# -------------------------------------------------------------------------
 	var life_support_energy_needed: float = life_support_energy_cost * energy_multiplier * delta_time
 	var greenhouse_energy_needed: float = greenhouse_energy_cost * delta_time
-	var total_energy_needed: float = life_support_energy_needed + greenhouse_energy_needed
-	
-	var current_energy: float = _resources[RES_ENERGY]
-	var net_energy: float = current_energy + energy_produced
-	
-	var life_support_active: bool = false
-	var greenhouse_powered: bool = false
-	
-	if net_energy >= total_energy_needed:
-		net_energy -= total_energy_needed
-		life_support_active = true
-		greenhouse_powered = true
-	elif net_energy >= life_support_energy_needed:
-		net_energy -= life_support_energy_needed
-		life_support_active = true
-		greenhouse_powered = false
-	else:
-		net_energy = 0.0
-		life_support_active = false
-		greenhouse_powered = false
-	
-	_set_resource(RES_ENERGY, net_energy)
-	
-	if _resources[RES_ENERGY] <= 0.0 and not is_blackout:
+	var life_support_deficit := maxf(0.0, life_support_energy_needed - direct_power)
+	var life_support_active := EnergyEconomy.try_spend_energy(life_support_deficit, "Soporte vital")
+	var remaining_power := maxf(0.0, direct_power - life_support_energy_needed)
+	var greenhouse_deficit := maxf(0.0, greenhouse_energy_needed - remaining_power)
+	var greenhouse_powered := life_support_active and EnergyEconomy.try_spend_energy(
+		greenhouse_deficit, "Invernadero automático")
+
+	if not life_support_active and not is_blackout:
 		blackout_triggered.emit()
 		if has_node("/root/BaseFSM"):
 			var fsm: Node = get_node("/root/BaseFSM")
@@ -219,12 +211,13 @@ func _calculate_resource_cycle(delta_time: float) -> void:
 	if not life_support_active or is_blackout:
 		var failure_decay_penalty: float = 3.0
 		crew_o2_loss *= failure_decay_penalty
-	elif is_emergency and _resources[RES_ENERGY] < (max_energy * 0.15):
+	elif is_emergency and EnergyEconomy.get_energy_ratio() < 0.15:
 		crew_o2_loss *= 1.8
 	else:
 		crew_o2_loss /= life_support_efficiency_bonus
 	
-	_modify_resource(RES_OXYGEN, -crew_o2_loss)
+	var oxygen_leak_loss := 8.0 * delta_time if _oxygen_leak_active else 0.0
+	_modify_resource(RES_OXYGEN, -crew_o2_loss - oxygen_leak_loss)
 	_modify_resource(RES_WATER, -crew_h2o_loss)
 	_modify_resource(RES_FOOD, -crew_food_loss)
 	
@@ -239,6 +232,9 @@ func _calculate_resource_cycle(delta_time: float) -> void:
 
 ## Agrega una cantidad positiva de un recurso.
 func add_resource(type: StringName, amount: float) -> void:
+	if type == RES_ENERGY:
+		EnergyEconomy.add_energy(amount, "Recursos")
+		return
 	if amount <= 0.0 or not _resources.has(type):
 		return
 	_modify_resource(type, amount)
@@ -246,6 +242,8 @@ func add_resource(type: StringName, amount: float) -> void:
 
 ## Consume una cantidad de recurso si hay suficiente disponible. Retorna true si tuvo éxito.
 func consume_resource(type: StringName, amount: float) -> bool:
+	if type == RES_ENERGY:
+		return amount > 0.0 and EnergyEconomy.try_spend_energy(amount, "Recursos")
 	if amount <= 0.0 or not _resources.has(type):
 		return false
 	if _resources[type] < amount:
@@ -255,15 +253,27 @@ func consume_resource(type: StringName, amount: float) -> bool:
 	return true
 
 
+func has_oxygen_leak() -> bool:
+	return _oxygen_leak_active
+
+
+func set_oxygen_leak_active(active: bool) -> void:
+	if _oxygen_leak_active != active:
+		_oxygen_leak_active = active
+		oxygen_leak_changed.emit(active)
+
+
 ## Obtiene la cantidad actual de un recurso específico.
 func get_resource(type: StringName) -> float:
+	if type == RES_ENERGY:
+		return EnergyEconomy.get_current_watts()
 	return _resources.get(type, 0.0)
 
 
 ## Obtiene el valor máximo de un recurso.
 func get_max_resource(type: StringName) -> float:
 	match type:
-		RES_ENERGY: return max_energy
+		RES_ENERGY: return EnergyEconomy.get_max_watts()
 		RES_WATER: return max_water
 		RES_FOOD: return max_food
 		RES_OXYGEN: return max_oxygen
@@ -303,8 +313,8 @@ func _modify_resource(type: StringName, delta_amount: float) -> void:
 
 
 func _check_critical_levels() -> void:
-	for res_type: StringName in _resources.keys():
-		var current_val: float = _resources[res_type]
+	for res_type: StringName in _critical_state:
+		var current_val := get_resource(res_type)
 		var max_val: float = get_max_resource(res_type)
 		var ratio: float = current_val / max_val if max_val > 0.0 else 0.0
 		

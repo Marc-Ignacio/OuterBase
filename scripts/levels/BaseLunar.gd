@@ -24,14 +24,32 @@ signal terminal_toggled(is_open: bool)
 @onready var player: PlayerController = $Player
 @onready var spawn_marker: Marker2D = $SpawnPoint
 @onready var terminal_screen: TerminalScreen = $TerminalScreen
-@onready var terminal_prompt: Control = $TerminalPrompt
+@onready var terminal_prompt: Label = $TerminalPrompt
+@onready var greenhouse: Node2D = $Greenhouse
+
+const DEVICE_TERMINAL := "BottomWallCommandCenter"
+const DEVICE_GREENHOUSE := "Invernadero"
+const DEVICE_WATER := "Tanque H₂O"
+const DEVICE_OXYGEN := "Tanque O₂"
+const DEMO_TIME_MULTIPLIER := 2.0
+const WATER_LEAK_SECOND := 25.0 * DEMO_TIME_MULTIPLIER
+const DEVICE_LABELS := {
+	DEVICE_TERMINAL: "Terminal",
+	DEVICE_GREENHOUSE: "Invernadero",
+	DEVICE_WATER: DEVICE_WATER,
+	DEVICE_OXYGEN: DEVICE_OXYGEN,
+}
 
 var _in_terminal_area: bool = false
-const DEMO_DAY_SECONDS := 110.0
+var _nearby_devices: Dictionary = {}
+var _prompt_device := ""
+var _prompt_feedback := ""
+const DEMO_DAY_SECONDS := 110.0 * DEMO_TIME_MULTIPLIER
 var _ate_today := false
 var _drank_today := false
 var _trained_today := false
 var _filter_pending := false
+var _water_leak_triggered := false
 var _day_succeeded := false
 
 # ==============================================================================
@@ -60,6 +78,7 @@ func _ready() -> void:
 	_connect_interaction_areas()
 	_connect_life_support()
 	DayManager.set_day_duration(DEMO_DAY_SECONDS)
+	EventManager.solar_calendar_rate = 1.0 / DEMO_TIME_MULTIPLIER
 	DayManager.auto_advance_next_day = false
 	DayManager.start_day(1)
 
@@ -68,15 +87,16 @@ func _connect_life_support() -> void:
 	var needs := player.needs_component
 	if not needs:
 		return
-	terminal_screen.setup_life_support(AstronautNeeds.GROW_ENERGY_COST, AstronautNeeds.RECYCLE_ENERGY_COST)
+	terminal_screen.setup_life_support(AstronautNeeds.RECYCLE_ENERGY_COST)
+	TaskManager.use_scheduled_filter_maintenance()
 	terminal_screen.eat_requested.connect(needs.eat_ration)
 	terminal_screen.drink_requested.connect(needs.drink_water)
-	terminal_screen.grow_requested.connect(needs.grow_ration)
+	greenhouse.ration_harvested.connect(needs.harvest_ration)
+	greenhouse.crop_status_changed.connect(terminal_screen.update_crop_status)
 	terminal_screen.recycle_requested.connect(needs.recycle_water)
 	needs.needs_updated.connect(terminal_screen.update_life_support_needs)
 	needs.supplies_updated.connect(terminal_screen.update_life_support_supplies)
 	needs.supply_action_finished.connect(terminal_screen.show_life_support_result)
-	terminal_screen.filter_requested.connect(needs.change_filter)
 	terminal_screen.train_requested.connect(TaskManager.advance_daily_training)
 	TaskManager.task_completed.connect(_on_life_support_task_changed)
 	TaskManager.new_task_assigned.connect(func(id: StringName, _urgent: bool):
@@ -88,6 +108,11 @@ func _connect_life_support() -> void:
 	terminal_screen.retry_day_requested.connect(_retry_demo)
 	DayManager.day_survived.connect(_show_day_result)
 	DayManager.day_started.connect(_reset_daily_objectives)
+	DayManager.day_time_updated.connect(_schedule_water_leak)
+	ResourceManager.resource_updated.connect(func(resource: StringName, _amount: float):
+		if resource == ResourceManager.RES_OXYGEN:
+			_update_oxygen_tank())
+	ResourceManager.oxygen_leak_changed.connect(func(_active: bool): _update_oxygen_tank())
 	needs.ration_eaten.connect(func():
 		_ate_today = true
 		_update_daily_objectives())
@@ -95,18 +120,32 @@ func _connect_life_support() -> void:
 		_drank_today = true
 		_update_daily_objectives())
 	_on_life_support_task_changed(TaskManager.TASK_CLEAN_O2_FILTERS)
+	_update_oxygen_tank()
 	TaskManager.enable_daily_training()
-	needs.enable_mission_life_support()
+	needs.enable_mission_life_support(DEMO_TIME_MULTIPLIER)
 
 
 func _on_life_support_task_changed(id: StringName) -> void:
 	if id == TaskManager.TASK_CLEAN_O2_FILTERS:
 		_filter_pending = TaskManager.is_task_active(id)
+		if _filter_pending and _prompt_device == DEVICE_WATER:
+			_prompt_feedback = ""
 		terminal_screen.update_filter_status(_filter_pending)
 		_update_daily_objectives()
 	elif id == TaskManager.TASK_DAILY_TRAINING and not TaskManager.is_task_active(id):
 		_trained_today = true
 		_update_daily_objectives()
+
+
+func _schedule_water_leak(remaining: float, duration: float) -> void:
+	if not _water_leak_triggered and duration - remaining >= WATER_LEAK_SECOND:
+		_water_leak_triggered = true
+		TaskManager.assign_water_tank_maintenance()
+
+
+func _update_oxygen_tank() -> void:
+	terminal_screen.update_oxygen_tank(ResourceManager.has_oxygen_leak(),
+		ResourceManager.get_resource(ResourceManager.RES_OXYGEN))
 
 
 func _reset_daily_objectives(day: int) -> void:
@@ -145,12 +184,15 @@ func _start_next_day() -> void:
 func _retry_demo() -> void:
 	if not DayManager.is_day_completed or _day_succeeded:
 		return
+	_water_leak_triggered = false
 	TaskManager.reset_demo_tasks()
+	_on_life_support_task_changed(TaskManager.TASK_CLEAN_O2_FILTERS)
 	ResourceManager.reset_reserves()
 	EnergyEconomy.reset_battery()
 	BaseFSM.change_state(BaseFSM.BaseState.NORMAL)
 	player.enter_shelter()
 	player.needs_component.reset_mission_supplies()
+	greenhouse.reset_crop()
 	close_terminal()
 	player.global_position = spawn_marker.global_position
 	player.reset_physics_interpolation()
@@ -168,6 +210,8 @@ func _connect_interaction_areas() -> void:
 		["InvernaderoArea", "Invernadero"],
 		["SoporteVitalArea", "Soporte Vital"],
 		["ReactoresArea", "Módulo de Reactores"],
+		["WaterTankArea", DEVICE_WATER],
+		["OxygenTankArea", DEVICE_OXYGEN],
 		["AirlockArea", "Esclusa"],
 		["BottomWallCommandCenter", "BottomWallCommandCenter"]
 	]
@@ -179,7 +223,7 @@ func _connect_interaction_areas() -> void:
 		if area:
 			area.body_entered.connect(func(body):
 				if body is PlayerController or body.name == "Player":
-					_handle_zone_entered(zone_name)
+					_handle_zone_entered(zone_name, area)
 			)
 			area.body_exited.connect(func(body):
 				if body is PlayerController or body.name == "Player":
@@ -187,33 +231,75 @@ func _connect_interaction_areas() -> void:
 			)
 
 
-func _handle_zone_entered(zone_name: String) -> void:
-	if zone_name == "BottomWallCommandCenter":
+func _handle_zone_entered(zone_name: String, area: Area2D) -> void:
+	if DEVICE_LABELS.has(zone_name):
+		_nearby_devices[zone_name] = area.get_node("CollisionShape2D")
+	if zone_name == DEVICE_TERMINAL:
 		_in_terminal_area = true
-		if terminal_prompt:
-			terminal_prompt.visible = true
 	player_entered_zone.emit(zone_name)
 
 
 func _handle_zone_exited(zone_name: String) -> void:
-	if zone_name == "BottomWallCommandCenter":
+	_nearby_devices.erase(zone_name)
+	if zone_name == DEVICE_TERMINAL:
 		_in_terminal_area = false
-		if terminal_prompt:
-			terminal_prompt.visible = false
 		if terminal_screen and terminal_screen.is_open():
 			terminal_screen.close()
 	player_exited_zone.emit(zone_name)
 
 
+func _nearest_device() -> String:
+	var nearest := ""
+	var distance := INF
+	for device: String in _nearby_devices:
+		var marker: Node2D = _nearby_devices[device]
+		var candidate := player.global_position.distance_squared_to(marker.global_position)
+		if candidate < distance:
+			nearest = device
+			distance = candidate
+	return nearest
+
+
+func _process(_delta: float) -> void:
+	var device := _nearest_device()
+	if device != _prompt_device:
+		_prompt_device = device
+		_prompt_feedback = ""
+	terminal_prompt.visible = not device.is_empty() and not terminal_screen.is_open()
+	if terminal_prompt.visible:
+		var marker: Node2D = _nearby_devices[device]
+		var message := "E · %s" % DEVICE_LABELS[device]
+		if device == DEVICE_WATER and _filter_pending:
+			message = "⚠ E · Reparar H₂O (%s)" % EnergyEconomy.format_sols(ceili(AstronautNeeds.FILTER_ENERGY_COST))
+		elif device == DEVICE_OXYGEN and ResourceManager.has_oxygen_leak():
+			message = "⚠ E · Reparar O₂ (%s)" % EnergyEconomy.format_sols(ceili(AstronautNeeds.FILTER_ENERGY_COST))
+		if not _prompt_feedback.is_empty():
+			message += "\n" + _prompt_feedback
+		terminal_prompt.text = message
+		terminal_prompt.global_position = marker.global_position + Vector2(-terminal_prompt.size.x * 0.5, -24)
+
+
 func _unhandled_input(event: InputEvent) -> void:
-	if event is InputEventKey and event.pressed and not event.echo:
-		if event.keycode == KEY_E:
-			if _in_terminal_area:
-				toggle_terminal()
-				get_viewport().set_input_as_handled()
-			elif terminal_screen and terminal_screen.is_open():
-				terminal_screen.close()
-				get_viewport().set_input_as_handled()
+	if not event is InputEventKey or not event.pressed or event.echo or event.keycode != KEY_E:
+		return
+	if terminal_screen.is_open():
+		close_terminal()
+		get_viewport().set_input_as_handled()
+		return
+	var device := _nearest_device()
+	match device:
+		DEVICE_TERMINAL:
+			open_terminal()
+		DEVICE_GREENHOUSE:
+			_prompt_feedback = greenhouse.interact()
+		DEVICE_WATER:
+			_prompt_feedback = player.needs_component.repair_water_tank()
+		DEVICE_OXYGEN:
+			_prompt_feedback = player.needs_component.inspect_or_repair_oxygen_tank()
+		_:
+			return
+	station_interacted.emit(device)
+	get_viewport().set_input_as_handled()
 
 
 func _on_terminal_opened() -> void:

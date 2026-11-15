@@ -71,8 +71,9 @@ const EVENT_OXYGEN_LEAK: StringName = &"oxygen_leak"
 @export var use_solar_calendar: bool = true
 
 ## Si está activo, proyecta proporcionalmente la duración del día a 600s.
-## Si es falso, 1 segundo de misión = 1 segundo de proyección histórica.
+## Si es falso, se aplica solar_calendar_rate al tiempo transcurrido.
 @export var scale_to_day_duration: bool = false
+var solar_calendar_rate := 1.0
 
 ## Duración en segundos tras el pico para declarar la alerta como finalizada (Simulación).
 @export_range(10.0, 120.0, 5.0) var simulated_alert_duration_after_peak: float = 45.0
@@ -207,7 +208,7 @@ func _on_day_time_updated(time_remaining: float, total_time: float) -> void:
 		return
 	
 	var elapsed: float = maxf(0.0, total_time - time_remaining)
-	var segundos_mision: float = elapsed
+	var segundos_mision: float = elapsed * solar_calendar_rate
 	if scale_to_day_duration and total_time > 0.0:
 		segundos_mision = (elapsed / total_time) * 600.0
 	

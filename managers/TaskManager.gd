@@ -99,6 +99,7 @@ var _greenhouse_buff_time: float = 0.0
 var _o2_buff_time: float = 0.0
 var _training_day := -1
 var _training_repetitions := -1 # -1 pendiente, 0 iniciado, 3 completado.
+var _scheduled_filter_maintenance := false
 
 # ==============================================================================
 # CICLO DE VIDA
@@ -165,7 +166,8 @@ func _create_initial_routine_tasks() -> void:
 		"Invernadero"
 	)
 	
-	_assign_filter_task()
+	if not _scheduled_filter_maintenance:
+		_assign_filter_task()
 
 
 func _assign_filter_task() -> void:
@@ -175,6 +177,18 @@ func _assign_filter_task() -> void:
 		"Limpia los filtros en el Módulo de Soporte Vital para mejorar la pureza del aire.",
 		"Soporte Vital"
 	)
+
+
+func use_scheduled_filter_maintenance() -> void:
+	if not _scheduled_filter_maintenance:
+		_scheduled_filter_maintenance = true
+		_active_tasks.erase(TASK_CLEAN_O2_FILTERS)
+
+
+func assign_water_tank_maintenance() -> void:
+	assign_routine_task(TASK_CLEAN_O2_FILTERS, "Reparar H₂O y cambiar filtro",
+		"Repara la fuga en el tanque de la sala inferior para reanudar el reciclaje.",
+		"Tanque H₂O")
 
 
 ## Asigna una tarea rutinaria (no urgente).
@@ -202,7 +216,8 @@ func _assign_daily_training(day: int) -> void:
 		return
 	_training_day = day
 	_training_repetitions = -1
-	_assign_filter_task()
+	if not _scheduled_filter_maintenance:
+		_assign_filter_task()
 	assign_routine_task(TASK_DAILY_TRAINING, "Entrenamiento diario",
 		"Completa tres pulsaciones de ejercicio.", "Terminal")
 	training_progress_changed.emit(_training_repetitions)
@@ -220,8 +235,8 @@ func advance_daily_training() -> void:
 	if not is_task_active(TASK_DAILY_TRAINING) or _training_repetitions >= TRAINING_REPETITIONS:
 		return
 	if _training_repetitions == -1:
-		if not EnergyEconomy.can_afford_energy(TRAINING_ENERGY_COST) or not EnergyEconomy.spend_energy(TRAINING_ENERGY_COST, "Entrenar"):
-			training_result.emit("Falta energía", false)
+		if not EnergyEconomy.try_spend_energy(TRAINING_ENERGY_COST, "Entrenar"):
+			training_result.emit(EnergyEconomy.format_shortfall(TRAINING_ENERGY_COST), false)
 			return
 		_training_repetitions = 0
 		training_result.emit("Entrenamiento iniciado", true)

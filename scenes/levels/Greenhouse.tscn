@@ -1,0 +1,77 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/levels/Greenhouse.gd" id="1"]
+
+[sub_resource type="StyleBoxFlat" id="Track"]
+bg_color = Color(0.1, 0.16, 0.2, 1)
+
+[sub_resource type="StyleBoxFlat" id="Fill"]
+bg_color = Color(0.36, 0.84, 0.55, 1)
+
+[node name="Greenhouse" type="Node2D"]
+script = ExtResource("1")
+
+[node name="GrowLight" type="Polygon2D" parent="."]
+color = Color(0.64, 0.92, 0.81, 1)
+polygon = PackedVector2Array(-50, -52, 50, -52, 50, -48, -50, -48)
+
+[node name="BedLeft" type="Polygon2D" parent="."]
+position = Vector2(-29, -35)
+color = Color(0.21, 0.38, 0.39, 1)
+polygon = PackedVector2Array(-24, -10, 24, -10, 24, 9, 20, 13, -20, 13, -24, 9)
+
+[node name="Soil" type="Polygon2D" parent="BedLeft"]
+color = Color(0.28, 0.20, 0.20, 1)
+polygon = PackedVector2Array(-20, -7, 20, -7, 20, 7, -20, 7)
+
+[node name="Seedlings" type="Polygon2D" parent="BedLeft"]
+color = Color(0.37, 0.73, 0.42, 1)
+polygon = PackedVector2Array(-15, 4, -15, -1, -12, -1, -12, -5, -8, -5, -8, -1, -5, -1, -5, 4, -3, 4, -3, -2, 1, -2, 1, -6, 5, -6, 5, -2, 8, -2, 8, 4, 10, 4, 10, 0, 13, 0, 13, -4, 17, -4, 17, 4)
+
+[node name="BedRight" type="Polygon2D" parent="."]
+position = Vector2(29, -35)
+color = Color(0.21, 0.38, 0.39, 1)
+polygon = PackedVector2Array(-24, -10, 24, -10, 24, 9, 20, 13, -20, 13, -24, 9)
+
+[node name="Soil" type="Polygon2D" parent="BedRight"]
+color = Color(0.28, 0.20, 0.20, 1)
+polygon = PackedVector2Array(-20, -7, 20, -7, 20, 7, -20, 7)
+
+[node name="Seedlings" type="Polygon2D" parent="BedRight"]
+color = Color(0.44, 0.80, 0.49, 1)
+polygon = PackedVector2Array(-17, 4, -17, -1, -13, -1, -13, -5, -9, -5, -9, 0, -6, 0, -6, 4, -3, 4, -3, -3, 2, -3, 2, -6, 6, -6, 6, 4, 10, 4, 10, 0, 14, 0, 14, -3, 17, -3, 17, 4)
+
+[node name="Panel" type="Polygon2D" parent="."]
+color = Color(0.18, 0.29, 0.34, 1)
+polygon = PackedVector2Array(-9, -17, 9, -17, 9, -8, -9, -8)
+
+[node name="ReadyLight" type="ColorRect" parent="."]
+offset_left = -3.0
+offset_top = -15.0
+offset_right = 3.0
+offset_bottom = -11.0
+mouse_filter = 2
+
+[node name="Status" type="Label" parent="."]
+offset_left = -54.0
+offset_top = 17.0
+offset_right = 54.0
+offset_bottom = 28.0
+theme_override_colors/font_color = Color(0.62, 0.9, 0.74, 1)
+theme_override_font_sizes/font_size = 8
+horizontal_alignment = 1
+
+[node name="Progress" type="ProgressBar" parent="."]
+offset_left = -20.0
+offset_top = 31.0
+offset_right = 20.0
+offset_bottom = 34.0
+mouse_filter = 2
+theme_override_styles/background = SubResource("Track")
+theme_override_styles/fill = SubResource("Fill")
+max_value = 1.0
+step = 0.0
+show_percentage = false
+
+[node name="GrowthTimer" type="Timer" parent="."]
+one_shot = true

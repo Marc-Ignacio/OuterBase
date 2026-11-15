@@ -9,6 +9,12 @@
 [ext_resource type="Texture2D" uid="uid://clghvl0aqxbiq" path="res://assets/sprites/Watersupply.png" id="7_ngfnq"]
 [ext_resource type="Texture2D" uid="uid://bhl8fi758sjbj" path="res://assets/sprites/OxygenTank.png" id="8_ic1b4"]
 [ext_resource type="PackedScene" path="res://scenes/ui/TerminalScreen.tscn" id="9_terminal"]
+[ext_resource type="PackedScene" path="res://scenes/levels/Greenhouse.tscn" id="10_greenhouse"]
+[ext_resource type="Texture2D" path="res://assets/sprites/moon2.png" id="11_moon"]
+[ext_resource type="Shader" path="res://assets/sprites/lunar_exterior_key.gdshader" id="12_exterior"]
+
+[sub_resource type="ShaderMaterial" id="LunarExteriorKey"]
+shader = ExtResource("12_exterior")
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_right_wall"]
 size = Vector2(26.5, 192)
@@ -67,28 +73,75 @@ size = Vector2(44, 40)
 [node name="BaseLunar" type="Node2D" unique_id=821381413]
 script = ExtResource("1_baselunar")
 
-[node name="SpaceBackground" type="ColorRect" parent="." unique_id=804489412]
-offset_left = -136.0
-offset_top = -118.0
-offset_right = 544.0
-offset_bottom = 374.0
-color = Color(0.117647, 0.109804, 0.168627, 1)
+[node name="LunarSurface" type="Parallax2D" parent="."]
+z_index = -2
+texture_filter = 1
+repeat_size = Vector2(650, 450)
+repeat_times = 4
+
+[node name="MoonTile" type="Sprite2D" parent="LunarSurface"]
+modulate = Color(0.76, 0.72, 0.82, 1)
+texture = ExtResource("11_moon")
+centered = false
+
+[node name="ExteriorHull" type="Node2D" parent="."]
+z_index = -1
+
+[node name="LeftSkirt" type="Polygon2D" parent="ExteriorHull"]
+color = Color(0.19, 0.17, 0.23, 1)
+polygon = PackedVector2Array(16, 166, 36, 189, 144, 189, 149, 194, 144, 200, 31, 200, 16, 183)
+
+[node name="CorridorSkirt" type="Polygon2D" parent="ExteriorHull"]
+color = Color(0.19, 0.17, 0.23, 1)
+polygon = PackedVector2Array(160, 140, 312, 140, 312, 149, 160, 149)
+
+[node name="RightSkirt" type="Polygon2D" parent="ExteriorHull"]
+color = Color(0.19, 0.17, 0.23, 1)
+polygon = PackedVector2Array(329, 189, 443, 189, 469, 163, 469, 173, 442, 200, 419, 200, 419, 191, 389, 191, 389, 200, 329, 200)
+
+[node name="LowerSkirt" type="Polygon2D" parent="ExteriorHull"]
+color = Color(0.19, 0.17, 0.23, 1)
+polygon = PackedVector2Array(190, 335, 306, 335, 311, 322, 365, 322, 368, 335, 444, 335, 444, 342, 439, 347, 363, 347, 359, 332, 321, 332, 316, 347, 195, 347, 190, 342)
+
+[node name="LeftPanels" type="Line2D" parent="ExteriorHull"]
+position = Vector2(35, 195)
+points = PackedVector2Array(0, 0, 30, 0, 30, 2, 79, 2, 79, 0, 105, 0)
+width = 2.0
+default_color = Color(0.49, 0.45, 0.52, 1)
+
+[node name="RightPanels" type="Line2D" parent="ExteriorHull"]
+points = PackedVector2Array(332, 195, 357, 195, 357, 197, 384, 197)
+width = 2.0
+default_color = Color(0.49, 0.45, 0.52, 1)
+
+[node name="LowerPanels" type="Line2D" parent="ExteriorHull"]
+points = PackedVector2Array(196, 342, 222, 342, 222, 344, 282, 344, 282, 342, 311, 342)
+width = 2.0
+default_color = Color(0.49, 0.45, 0.52, 1)
+
+[node name="TankBayPanels" type="Line2D" parent="ExteriorHull"]
+points = PackedVector2Array(369, 342, 390, 342, 390, 344, 420, 344, 420, 342, 439, 342)
+width = 2.0
+default_color = Color(0.49, 0.45, 0.52, 1)
 
 [node name="Modules" type="Node2D" parent="." unique_id=122749082]
 
 [node name="Corridor" type="Sprite2D" parent="Modules" unique_id=1930914461]
+material = SubResource("LunarExteriorKey")
 position = Vector2(153, 44)
 scale = Vector2(1.04375, 1.0900002)
 texture = ExtResource("3_pasillo1")
 centered = false
 
 [node name="CommandCenter2" type="Sprite2D" parent="Modules" unique_id=1239078228]
+material = SubResource("LunarExteriorKey")
 position = Vector2(-7, 0)
 texture = ExtResource("4_scene01")
 centered = false
 flip_h = true
 
 [node name="CommandCenter" type="Sprite2D" parent="Modules" unique_id=1769978956]
+material = SubResource("LunarExteriorKey")
 position = Vector2(320, 0)
 texture = ExtResource("4_scene01")
 centered = false
@@ -99,17 +152,11 @@ texture = ExtResource("5_scenescreen")
 centered = false
 
 [node name="RoomLeft" type="Sprite2D" parent="Modules/ScreenOverlay" unique_id=1090417565]
+material = SubResource("LunarExteriorKey")
 position = Vector2(-156, 234.99998)
 scale = Vector2(1.1, 1.1300001)
 texture = ExtResource("2_room2")
 centered = false
-
-[node name="ColorRect" type="ColorRect" parent="Modules" unique_id=692570151]
-offset_left = -22.0
-offset_top = -1.0
-offset_right = 18.0
-offset_bottom = 262.0
-color = Color(0.11764706, 0.10980392, 0.16862746, 1)
 
 [node name="ColorRect2" type="ColorRect" parent="Modules" unique_id=179559398]
 offset_left = 364.0
@@ -131,6 +178,9 @@ offset_top = 293.0
 offset_right = 366.0
 offset_bottom = 326.0
 color = Color(0.21176471, 0.19607843, 0.34901962, 1)
+
+[node name="Greenhouse" parent="." instance=ExtResource("10_greenhouse")]
+position = Vector2(84, 120)
 
 [node name="WallsStaticBody" type="StaticBody2D" parent="." unique_id=336970959]
 
@@ -259,6 +309,18 @@ position = Vector2(448, 119)
 [node name="CollisionShape2D" type="CollisionShape2D" parent="InteractionZones/BottomWallCommandCenter"]
 shape = SubResource("RectangleShape2D_terminal_trigger")
 
+[node name="WaterTankArea" type="Area2D" parent="InteractionZones"]
+position = Vector2(219, 312)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="InteractionZones/WaterTankArea"]
+shape = SubResource("RectangleShape2D_reactores")
+
+[node name="OxygenTankArea" type="Area2D" parent="InteractionZones"]
+position = Vector2(422, 307)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="InteractionZones/OxygenTankArea"]
+shape = SubResource("RectangleShape2D_soporte_vital")
+
 [node name="SpawnPoint" type="Marker2D" parent="." unique_id=16677685]
 position = Vector2(391, 103)
 
@@ -271,12 +333,32 @@ position = Vector2(391, 104)
 position = Vector2(434, 320)
 texture = ExtResource("8_ic1b4")
 
+[node name="TankLabel" type="Label" parent="Oxygen"]
+offset_left = 413.0
+offset_top = 304.0
+offset_right = 455.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.63, 0.96, 0.74, 1)
+theme_override_font_sizes/font_size = 8
+text = "◈ O₂"
+horizontal_alignment = 1
+
 [node name="Water" type="Node2D" parent="." unique_id=2077387488]
 
 [node name="Sprite2D" type="Sprite2D" parent="Water" unique_id=1390069632]
 position = Vector2(206, 284)
 scale = Vector2(0.84375, 0.875)
 texture = ExtResource("7_ngfnq")
+
+[node name="TankLabel" type="Label" parent="Water"]
+offset_left = 185.0
+offset_top = 267.0
+offset_right = 227.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.51, 0.85, 1, 1)
+theme_override_font_sizes/font_size = 8
+text = "◆ H₂O"
+horizontal_alignment = 1
 
 [node name="TerminalPrompt" type="Label" parent="."]
 visible = false
