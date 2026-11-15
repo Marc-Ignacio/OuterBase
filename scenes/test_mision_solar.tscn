@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://b1m7s4l9x2c3v"]
+
+[ext_resource type="Script" path="res://scripts/utils/test_mision_solar.gd" id="1_test_solar"]
+
+[node name="TestMisionSolar" type="Node"]
+script = ExtResource("1_test_solar")

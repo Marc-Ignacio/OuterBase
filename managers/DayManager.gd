@@ -16,6 +16,9 @@ signal day_survived()
 ## Emitida al comenzar un nuevo día lunar.
 signal day_started(day_number: int)
 
+## Emitida al reiniciar el día actual.
+signal day_restarted()
+
 ## Emitida continuamente para que la interfaz gráfica (UI) actualice el reloj/temporizador.
 signal day_time_updated(time_remaining: float, total_time: float)
 
@@ -101,6 +104,7 @@ func restart_day() -> void:
 	time_remaining = day_duration_seconds
 	is_running = true
 	is_day_completed = false
+	day_restarted.emit()
 	day_time_updated.emit(time_remaining, day_duration_seconds)
 
 
