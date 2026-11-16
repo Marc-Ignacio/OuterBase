@@ -26,8 +26,10 @@ signal terminal_toggled(is_open: bool)
 @onready var terminal_screen: TerminalScreen = $TerminalScreen
 @onready var terminal_prompt: Label = $TerminalPrompt
 @onready var greenhouse: Node2D = $Greenhouse
-@onready var shelter_sign: Label = $InteractionZones/AirlockArea/CollisionShape2D/ShelterFloor/ShelterSign
 @onready var communications: Node2D = $Communications
+@onready var surface_camera: Camera2D = $Player/Camera2D
+@onready var shelter_camera: Camera2D = $Refugio/Camera2D
+@onready var shelter_arrival: Marker2D = $Refugio/Llegada
 
 ## Segundos de calendario por segundo de misión en la demo.
 @export_range(0.1, 10.0, 0.01) var demo_solar_calendar_rate := 3.67
@@ -38,6 +40,7 @@ const DEVICE_WATER := "Tanque H₂O"
 const DEVICE_OXYGEN := "Tanque O₂"
 const DEVICE_COMMUNICATIONS := "Panel COM"
 const REFUGE_ZONE := "Esclusa"
+const DEVICE_SHELTER_EXIT := "Escalera del refugio"
 const COMMAND_SHIELD_ZONE := "Zona de trabajo del centro de mando"
 const SHIELD_COST := 30
 const DEMO_TIME_MULTIPLIER := 2.0
@@ -48,12 +51,15 @@ const DEVICE_LABELS := {
 	DEVICE_WATER: DEVICE_WATER,
 	DEVICE_OXYGEN: DEVICE_OXYGEN,
 	DEVICE_COMMUNICATIONS: DEVICE_COMMUNICATIONS,
+	REFUGE_ZONE: "Bajar al refugio",
+	DEVICE_SHELTER_EXIT: "Subir a la base",
 }
 
 var _in_terminal_area: bool = false
 var _nearby_devices: Dictionary = {}
 var _prompt_device := ""
 var _prompt_feedback := ""
+var _shelter_return_position := Vector2.ZERO
 const DEMO_DAY_SECONDS := 110.0 * DEMO_TIME_MULTIPLIER
 var _water_repaired_today := false
 var _water_restored := false
@@ -93,7 +99,8 @@ func _ready() -> void:
 		
 	_connect_terminal_events()
 	_connect_interaction_areas()
-	player.shelter_state_changed.connect(_update_shelter_sign)
+	get_viewport().size_changed.connect(_fit_shelter_camera)
+	_fit_shelter_camera()
 	_connect_life_support()
 	communications.status_changed.connect(terminal_screen.update_communications)
 	terminal_toggled.connect(communications.set_terminal_open)
@@ -267,6 +274,8 @@ func _retry_demo() -> void:
 	ResourceManager.reset_reserves()
 	EnergyEconomy.reset_battery()
 	BaseFSM.change_state(BaseFSM.BaseState.NORMAL)
+	if player.is_in_shelter():
+		_leave_underground()
 	player.leave_shelter_for_work_zone()
 	player.needs_component.reset_mission_supplies()
 	greenhouse.reset_crop()
@@ -298,22 +307,23 @@ func _connect_interaction_areas() -> void:
 	for zone_data in zones:
 		var node_name: String = zone_data[0]
 		var zone_name: String = zone_data[1]
-		var area: Area2D = get_node_or_null("InteractionZones/" + node_name)
-		if area:
-			area.body_entered.connect(func(body):
-				if body is PlayerController or body.name == "Player":
-					_handle_zone_entered(zone_name, area)
-			)
-			area.body_exited.connect(func(body):
-				if body is PlayerController or body.name == "Player":
-					_handle_zone_exited(zone_name)
-			)
+		_connect_interaction_area(get_node("InteractionZones/" + node_name), zone_name)
+	_connect_interaction_area($Refugio/Escalera, DEVICE_SHELTER_EXIT)
+
+
+func _connect_interaction_area(area: Area2D, zone_name: String) -> void:
+	area.body_entered.connect(func(body):
+		if body == player:
+			_handle_zone_entered(zone_name, area)
+	)
+	area.body_exited.connect(func(body):
+		if body == player:
+			_handle_zone_exited(zone_name)
+	)
 
 
 func _handle_zone_entered(zone_name: String, area: Area2D) -> void:
-	if zone_name == REFUGE_ZONE:
-		player.enter_shelter()
-	elif zone_name == COMMAND_SHIELD_ZONE:
+	if zone_name == COMMAND_SHIELD_ZONE:
 		_in_command_shield_zone = true
 		_update_command_shield()
 	if DEVICE_LABELS.has(zone_name):
@@ -323,14 +333,8 @@ func _handle_zone_entered(zone_name: String, area: Area2D) -> void:
 	player_entered_zone.emit(zone_name)
 
 
-func _update_shelter_sign(in_shelter: bool) -> void:
-	shelter_sign.text = "En refugio" if in_shelter else "REFUGIO"
-
-
 func _handle_zone_exited(zone_name: String) -> void:
-	if zone_name == REFUGE_ZONE:
-		player.leave_shelter_for_work_zone()
-	elif zone_name == COMMAND_SHIELD_ZONE:
+	if zone_name == COMMAND_SHIELD_ZONE:
 		_in_command_shield_zone = false
 		_update_command_shield()
 	_nearby_devices.erase(zone_name)
@@ -345,12 +349,41 @@ func _nearest_device() -> String:
 	var nearest := ""
 	var distance := INF
 	for device: String in _nearby_devices:
+		if player.is_in_shelter() != (device == DEVICE_SHELTER_EXIT):
+			continue
 		var marker: Node2D = _nearby_devices[device]
 		var candidate := player.global_position.distance_squared_to(marker.global_position)
 		if candidate < distance:
 			nearest = device
 			distance = candidate
 	return nearest
+
+
+func _fit_shelter_camera() -> void:
+	var viewport_size := get_viewport_rect().size
+	var room_zoom := minf(viewport_size.x / 168.0, viewport_size.y / 114.0)
+	shelter_camera.zoom = Vector2.ONE * maxf(1.0, floorf(room_zoom))
+
+
+func _enter_underground() -> void:
+	_shelter_return_position = player.global_position
+	player.global_position = shelter_arrival.global_position
+	player.reset_physics_interpolation()
+	player.enter_shelter()
+	$LunarSurface.hide()
+	shelter_camera.enabled = true
+	shelter_camera.make_current()
+	shelter_camera.force_update_scroll()
+
+
+func _leave_underground() -> void:
+	player.global_position = _shelter_return_position
+	player.reset_physics_interpolation()
+	player.leave_shelter_for_work_zone()
+	$LunarSurface.show()
+	surface_camera.make_current()
+	surface_camera.force_update_scroll()
+	shelter_camera.enabled = false
 
 
 func _process(_delta: float) -> void:
@@ -395,6 +428,10 @@ func _unhandled_input(event: InputEvent) -> void:
 			_prompt_feedback = player.needs_component.inspect_or_repair_oxygen_tank()
 		DEVICE_COMMUNICATIONS:
 			_prompt_feedback = communications.interact()
+		REFUGE_ZONE:
+			_enter_underground()
+		DEVICE_SHELTER_EXIT:
+			_leave_underground()
 		_:
 			return
 	station_interacted.emit(device)

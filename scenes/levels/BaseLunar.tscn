@@ -15,6 +15,7 @@
 [ext_resource type="Shader" path="res://assets/sprites/lunar_exterior_key.gdshader" id="12_exterior"]
 [ext_resource type="Script" path="res://scripts/levels/ExteriorPerimeter.gd" id="14_perimeter"]
 [ext_resource type="Script" path="res://scripts/levels/SolarArray.gd" id="15_solar_array"]
+[ext_resource type="PackedScene" path="res://scenes/levels/Refugio.tscn" id="16_refugio"]
 
 [sub_resource type="ShaderMaterial" id="LunarExteriorKey"]
 shader = ExtResource("12_exterior")
@@ -78,6 +79,9 @@ size = Vector2(140, 134)
 
 [node name="BaseLunar" type="Node2D" unique_id=821381413]
 script = ExtResource("1_baselunar")
+
+[node name="Refugio" parent="." instance=ExtResource("16_refugio")]
+position = Vector2(0, -4000)
 
 [node name="LunarSurface" type="Parallax2D" parent="."]
 z_index = -2
