@@ -36,7 +36,7 @@ signal day_paused(is_paused: bool)
 @export_range(60.0, 600.0, 10.0) var day_duration_seconds: float = 180.0
 
 ## Si es verdadero, el temporizador comienza automáticamente al cargar la escena.
-@export var auto_start: bool = true
+@export var auto_start: bool = false
 
 ## Si es verdadero, al sobrevivir un día arranca automáticamente el siguiente.
 @export var auto_advance_next_day: bool = false

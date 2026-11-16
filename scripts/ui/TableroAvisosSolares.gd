@@ -119,11 +119,11 @@ func _on_shelter_order_issued(order_text: String, is_sheltered: bool, time_to_sh
 				order_text_label.text = order_text
 			if order_detail_label:
 				if not is_sheltered and time_to_shelter > 0.0:
-					order_detail_label.text = "¡Alerta! Tiempo restante para entrar al refugio: %.1fs" % time_to_shelter
+					order_detail_label.text = "Time to reach shelter: %.1f s" % time_to_shelter
 				elif is_sheltered:
-					order_detail_label.text = "Astronauta dentro del refugio. Salida exterior bloqueada."
+					order_detail_label.text = "You are in the shelter. Stay inside."
 				else:
-					order_detail_label.text = "Salida exterior condicionada. Riesgo de radiación."
+					order_detail_label.text = "Exit is limited. Radiation risk is higher outside."
 
 
 func _on_radiation_exposure_updated(flux_pfu: float, dose_msv: float, dose_rate_msv_s: float) -> void:
@@ -194,17 +194,17 @@ func _update_card_ui(panel: PanelContainer, notice: Dictionary) -> void:
 	var meta_lbl: Label = vbox.get_node_or_null("MetaLabel")
 	
 	if title_lbl:
-		title_lbl.text = notice.get("titulo", "Aviso Solar")
+		title_lbl.text = notice.get("titulo", "Sun alert")
 	if msg_lbl:
 		msg_lbl.text = notice.get("mensaje", "")
 	if meta_lbl:
 		var flux_info := ""
 		if notice.get("flujo_pfu", 0.0) > 0.0:
-			flux_info = " | Flujo: %d pfu" % int(notice["flujo_pfu"])
+			flux_info = " | Proton flux: %d pfu" % int(notice["flujo_pfu"])
 		elif notice.get("umbral_pfu", 0) > 0:
-			flux_info = " | Umbral: %d pfu" % int(notice["umbral_pfu"])
+			flux_info = " | Threshold: %d pfu" % int(notice["umbral_pfu"])
 			
-		meta_lbl.text = "Fuente: %s [%s] | Fecha UTC: %s%s\nURL: %s" % [
+		meta_lbl.text = "Source: %s [%s] | UTC date: %s%s\nURL: %s" % [
 			notice.get("fuente", "NASA/NOAA"),
 			notice.get("id_fuente", notice.get("id_episodio", "")),
 			notice.get("fecha_utc", "N/A"),
@@ -219,7 +219,7 @@ func _update_card_ui(panel: PanelContainer, notice: Dictionary) -> void:
 func _update_status_badge(state: String) -> void:
 	if not status_badge_label:
 		return
-	status_badge_label.text = "[SALIDA: %s]" % state
+	status_badge_label.text = EventManager.get_exit_restriction_label(state)
 	match state:
 		"PERMITIDA":
 			status_badge_label.add_theme_color_override("font_color", Color(0.2, 0.85, 0.3))
@@ -237,10 +237,10 @@ func _update_shelter_display(is_sheltered: bool) -> void:
 	if not shelter_status_label:
 		return
 	if is_sheltered:
-		shelter_status_label.text = "En Refugio (Protegido)"
+		shelter_status_label.text = "In shelter (protected)"
 		shelter_status_label.add_theme_color_override("font_color", Color(0.2, 0.85, 0.3))
 	else:
-		shelter_status_label.text = "En Exterior EVA (Expuesto)"
+		shelter_status_label.text = "Outside (exposed)"
 		shelter_status_label.add_theme_color_override("font_color", Color(0.95, 0.25, 0.2))
 
 # ==============================================================================

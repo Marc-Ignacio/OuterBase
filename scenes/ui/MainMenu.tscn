@@ -1,0 +1,162 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/MainMenu.gd" id="1_menu"]
+[ext_resource type="Texture2D" path="res://assets/sprites/LOGO.png" id="2_logo"]
+[ext_resource type="Texture2D" path="res://assets/sprites/moon2.png" id="3_moon"]
+
+[sub_resource type="StyleBoxFlat" id="Panel"]
+bg_color = Color(0.04, 0.09, 0.09, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.35, 0.71, 0.57, 1)
+shadow_color = Color(0.03, 0.03, 0.06, 0.9)
+shadow_size = 6
+shadow_offset = Vector2(4, 5)
+
+[sub_resource type="StyleBoxFlat" id="ButtonNormal"]
+bg_color = Color(0.09, 0.21, 0.17, 1)
+border_width_bottom = 3
+border_color = Color(0.25, 0.52, 0.4, 1)
+
+[sub_resource type="StyleBoxFlat" id="ButtonHover"]
+bg_color = Color(0.15, 0.34, 0.26, 1)
+border_width_bottom = 3
+border_color = Color(0.36, 0.69, 0.55, 1)
+
+[sub_resource type="StyleBoxFlat" id="ButtonFocus"]
+draw_center = false
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.97, 0.83, 0.48, 1)
+
+[sub_resource type="SystemFont" id="Mono"]
+font_names = PackedStringArray("DejaVu Sans Mono", "Consolas", "Courier New", "monospace")
+
+[sub_resource type="Theme" id="MenuTheme"]
+default_font = SubResource("Mono")
+default_font_size = 17
+Button/colors/font_color = Color(0.86, 1, 0.9, 1)
+Button/styles/focus = SubResource("ButtonFocus")
+Button/styles/hover = SubResource("ButtonHover")
+Button/styles/normal = SubResource("ButtonNormal")
+Button/styles/pressed = SubResource("ButtonHover")
+Label/colors/font_color = Color(0.86, 1, 0.9, 1)
+RichTextLabel/colors/default_color = Color(0.85, 0.93, 0.88, 1)
+
+[node name="MainMenu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = SubResource("MenuTheme")
+script = ExtResource("1_menu")
+
+[node name="Moon" type="TextureRect" parent="."]
+texture_filter = 1
+modulate = Color(0.24, 0.24, 0.34, 1)
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+texture = ExtResource("3_moon")
+expand_mode = 1
+stretch_mode = 1
+
+[node name="Center" type="CenterContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="Card" type="PanelContainer" parent="Center"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("Panel")
+
+[node name="Margin" type="MarginContainer" parent="Center/Card"]
+layout_mode = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 20
+
+[node name="Home" type="VBoxContainer" parent="Center/Card/Margin"]
+custom_minimum_size = Vector2(248, 0)
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="Logo" type="TextureRect" parent="Center/Card/Margin/Home"]
+texture_filter = 1
+custom_minimum_size = Vector2(0, 88)
+layout_mode = 2
+texture = ExtResource("2_logo")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Title" type="Label" parent="Center/Card/Margin/Home"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 40
+text = "OuterBase"
+horizontal_alignment = 1
+
+[node name="Start" type="Button" parent="Center/Card/Margin/Home"]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+text = "Start Mission"
+
+[node name="CreditsButton" type="Button" parent="Center/Card/Margin/Home"]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+text = "Credits & Sources"
+
+[node name="StartError" type="Label" parent="Center/Card/Margin/Home"]
+visible = false
+layout_mode = 2
+text = "Could not start the mission. Try again."
+autowrap_mode = 2
+
+[node name="Credits" type="VBoxContainer" parent="Center/Card/Margin"]
+visible = false
+custom_minimum_size = Vector2(290, 0)
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Heading" type="Label" parent="Center/Card/Margin/Credits"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 23
+text = "Credits & Sources"
+
+[node name="Sources" type="RichTextLabel" parent="Center/Card/Margin/Credits"]
+custom_minimum_size = Vector2(0, 212)
+layout_mode = 2
+bbcode_enabled = true
+text = "[b]OuterBase team[/b]
+Built for NASA Space Apps.
+
+[b]Space weather[/b]
+[url=https://ccmc.gsfc.nasa.gov/DONKI/events/]NASA CCMC DONKI[/url] · Solar flares and energetic particles.
+[url=https://www.ngdc.noaa.gov/stp/space-weather/interplanetary-data/solar-proton-events/archive/SEP%20page%20code.20241115.html]NOAA SWPC archive[/url] · Proton storm records.
+The game replays historical events from October 2024. Radiation dose and equipment failures are simulated.
+
+[b]Life on the space station[/b]
+[url=https://www.nasa.gov/missions/station/iss-research/astronaut-exercise/]NASA Astronaut Exercise[/url]
+[url=https://osdr.nasa.gov/bio/repo/data/studies/OSD-684]NASA OSDR · OSD-684[/url]
+[url=https://www.nasa.gov/missions/station/iss-research/nasa-achieves-water-recovery-milestone-on-international-space-station/]NASA · Water recovery[/url]
+
+[b]AI-assisted work[/b]
+OpenAI Codex · Implementation and testing
+Google Antigravity · Implementation
+ChatGPT · Contribution to confirm
+Solar panels (SolarArray.gd) · [b]AI-generated[/b]
+Added wall faces and trim (ExteriorPerimeter.gd) · [b]AI-generated[/b]"
+
+[node name="Back" type="Button" parent="Center/Card/Margin/Credits"]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+text = "Back to menu"

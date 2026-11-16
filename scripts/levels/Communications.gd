@@ -51,36 +51,36 @@ func set_terminal_open(open: bool) -> void:
 
 func interaction_caption() -> String:
 	if _link == Link.OFFLINE:
-		return "E · Reiniciar comunicaciones"
-	return "E · Enviar reporte"
+		return "E · Restart radio"
+	return "E · Send message"
 
 
 func interact() -> String:
 	if _link == Link.OFFLINE:
 		_set_link(Link.ONLINE)
 		TaskManager.complete_task(TaskManager.TASK_REPAIR_COMMUNICATIONS)
-		return "Comunicaciones restablecidas"
+		return "Radio restored"
 	return send_report()
 
 
 func send_report() -> String:
 	if _link == Link.OFFLINE:
-		return _show_report_message("Reinicia el equipo en el centro de mando", false)
+		return _show_report_message("Restart the radio in the command center", false)
 	if _link == Link.UNSTABLE:
-		return _show_report_message("Enlace inestable · Espera la recuperación", false)
+		return _show_report_message("Weak signal · Wait for it to return", false)
 	if not _report_timer.is_stopped():
-		return "Enviando a Tierra…"
+		return "Sending to Earth…"
 	_report_timer.start(REPORT_SECONDS)
 	publish_status()
-	_show_report_message("Enviando a Tierra…", true)
+	_show_report_message("Sending to Earth…", true)
 	_feedback_timer.stop()
-	return "Enviando a Tierra…"
+	return "Sending to Earth…"
 
 
 func _confirm_report() -> void:
 	publish_status()
 	if not DayManager.is_day_completed:
-		_show_report_message("Confirmación recibida · Ida y vuelta simuladas", true)
+		_show_report_message("Message confirmed · Simulated round trip", true)
 		report_confirmed.emit()
 
 
@@ -111,8 +111,8 @@ func _on_solar_milestone(hito: Dictionary) -> void:
 		_storm_seen = true
 		_flare_timer.stop()
 		TaskManager.assign_routine_task(TaskManager.TASK_REPAIR_COMMUNICATIONS,
-			"Reiniciar comunicaciones", "Pulsa E junto al panel COM de la pared superior.",
-			"Centro de mando · Panel COM")
+			"Restart radio", "Press E at the COM panel on the north wall.",
+			"Command center · COM panel")
 		_set_link(Link.OFFLINE)
 		link_failed.emit()
 
@@ -131,21 +131,21 @@ func _set_link(value: Link) -> void:
 	_link = value
 	if value != Link.ONLINE and not _report_timer.is_stopped():
 		_report_timer.stop()
-		_show_report_message("Envío interrumpido · Inténtalo al recuperar el enlace", false)
-	var status := "Operativas"
+		_show_report_message("Message interrupted · Try again when the radio is back", false)
+	var status := "Online"
 	var color := Color("#6aefa7")
 	match value:
 		Link.UNSTABLE:
-			status = "Enlace inestable"
+			status = "Radio signal weak"
 			color = Color("#ffda75")
 		Link.OFFLINE:
-			status = "Bloqueadas"
+			status = "Offline"
 			color = Color("#ff927d")
 	_display.text = "● COM" if value == Link.ONLINE else "⚠ COM"
 	_display.modulate = color
 	_update_alert()
 	if value == Link.ONLINE and not _report_timer.is_stopped():
-		status = "Enviando a Tierra…"
+		status = "Sending to Earth…"
 	status_changed.emit(status, value == Link.ONLINE and _report_timer.is_stopped())
 
 
@@ -153,17 +153,17 @@ func _update_alert() -> void:
 	var warning := ""
 	var color := Color("#ffda75")
 	if _link == Link.UNSTABLE:
-		warning = "Llamarada solar"
+		warning = "Solar flare"
 	elif _storm_seen and EventManager.get_exit_restriction_name() == "SUSPENDIDA":
 		color = Color("#ff927d")
-		var protection := "Refugio · Baja desde el centro de mando"
+		var protection := "Enter the shelter by the O₂ tank"
 		if EventManager.is_player_sheltered():
-			protection = "En refugio"
+			protection = "In shelter"
 		elif EventManager.is_player_in_shielded_work_zone():
-			protection = "Zona blindada · Centro de mando"
-		warning = "Tormenta solar · Busca protección\n%s" % protection
+			protection = "Shielded zone · Command center"
+		warning = "Solar storm · Get to safety\n%s" % protection
 	elif _link == Link.OFFLINE:
-		warning = "COM averiado · Reinicia el panel del centro de mando"
+		warning = "Radio offline · Restart it in the command center"
 	_alert.visible = not warning.is_empty()
 	if _message.text != warning:
 		_message.text = warning

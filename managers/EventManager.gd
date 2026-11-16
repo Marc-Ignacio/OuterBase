@@ -242,7 +242,7 @@ func reiniciar_calendario() -> void:
 	_ultimo_tiempo_mision = 0.0
 	_orden_activa = ""
 	
-	exit_restriction_changed.emit("PERMITIDA", "Misión reiniciada")
+	exit_restriction_changed.emit("PERMITIDA", "Mission restarted")
 	shelter_order_issued.emit("", _is_player_sheltered, 0.0)
 	radiation_exposure_updated.emit(0.0, 0.0, 0.0)
 	solar_calendar_restarted.emit()
@@ -273,19 +273,19 @@ func _on_solar_milestone(hito: Dictionary) -> void:
 		"NOAA-SWPC-2024-10-26T19:10Z":
 			_procesar_episodio_octubre_26_28(hito, ep_id, tipo_hito)
 		_:
-			_procesar_episodio_generico(hito, ep_id, tipo_hito, tipo)
+			_procesar_episodio_generico(hito, ep_id, tipo)
 
 
 func _procesar_episodio_octubre_3(hito: Dictionary, ep_id: String, tipo_hito: String) -> void:
 	# 3 de octubre: Fulguración solar X9.0. Solo vigilancia. No restringe salida.
 	if not _avisos_solares.has(ep_id):
 		var aviso := _crear_estructura_aviso(hito, ep_id)
-		aviso["titulo"] = "VIGILANCIA: Fulguración Solar Clase " + str(hito.get("clase", "X9.0"))
-		aviso["mensaje"] = "Aviso de vigilancia: Fulguración solar detectada. Operaciones normales permitidas."
+		aviso["titulo"] = "CAUTION: Solar flare, class " + str(hito.get("clase", "X9.0"))
+		aviso["mensaje"] = "A solar flare was detected. Work can continue."
 		aviso["estado_salida"] = "VIGILANCIA"
 		_avisos_solares[ep_id] = aviso
 		
-		_set_estado_salida(ExitRestriction.VIGILANCIA, "Fulguración solar X9.0 observada")
+		_set_estado_salida(ExitRestriction.VIGILANCIA, "X9.0 solar flare observed")
 		if has_node("/root/BaseFSM"):
 			get_node("/root/BaseFSM").change_state(BaseFSM.BaseState.ALERTA_CLIMA)
 		
@@ -295,9 +295,9 @@ func _procesar_episodio_octubre_3(hito: Dictionary, ep_id: String, tipo_hito: St
 		var aviso: Dictionary = _avisos_solares[ep_id]
 		_actualizar_datos_fuente(aviso, hito)
 		if tipo_hito == "pico":
-			aviso["mensaje"] = "Pico de fulguración X9.0 registrado a las %s. Mantener vigilancia." % hito.get("fecha_utc", "")
+			aviso["mensaje"] = "The X9.0 flare peaked at %s. Watch for updates." % hito.get("fecha_utc", "")
 		elif tipo_hito == "aviso_publicado":
-			aviso["mensaje"] = "Aviso DONKI emitido (%s). Situación bajo monitoreo continuo." % hito.get("id_fuente", "")
+			aviso["mensaje"] = "DONKI issued notice %s. Monitoring continues." % hito.get("id_fuente", "")
 		solar_notice_updated.emit(aviso)
 
 
@@ -305,8 +305,8 @@ func _procesar_episodio_octubre_9_10(hito: Dictionary, ep_id: String, tipo_hito:
 	# 9–10 de octubre: Tormenta de radiación solar S3 (Pico 1,810 pfu)
 	if not _avisos_solares.has(ep_id):
 		var aviso := _crear_estructura_aviso(hito, ep_id)
-		aviso["titulo"] = "DETECCIÓN: Tormenta de Protones Solares (>100 MeV)"
-		aviso["mensaje"] = "Detección temprana DONKI de partículas solares energéticas. Monitoreando radiación."
+		aviso["titulo"] = "Solar protons detected (>100 MeV)"
+		aviso["mensaje"] = "DONKI recorded early signs of energetic particles from the Sun."
 		aviso["estado_salida"] = "VIGILANCIA"
 		_avisos_solares[ep_id] = aviso
 		solar_notice_posted.emit(aviso)
@@ -317,7 +317,7 @@ func _procesar_episodio_octubre_9_10(hito: Dictionary, ep_id: String, tipo_hito:
 	
 	match tipo_hito:
 		"inicio", "aviso_publicado":
-			aviso["mensaje"] = "Inicio de evento SEP registrado por GOES (>10 MeV). Notificación DONKI en curso."
+			aviso["mensaje"] = "GOES detected the start of a solar particle event (>10 MeV). DONKI reported it."
 			solar_notice_updated.emit(aviso)
 			
 		"umbral":
@@ -326,20 +326,20 @@ func _procesar_episodio_octubre_9_10(hito: Dictionary, ep_id: String, tipo_hito:
 			aviso["umbral_pfu"] = hito.get("umbral_pfu", 1000)
 			_flujo_pfu_actual = float(aviso["umbral_pfu"])
 			aviso["flujo_pfu"] = _flujo_pfu_actual
-			aviso["titulo"] = "ALERTA S3: Tormenta de Radiación Solar Fuerte (NOAA SWPC)"
+			aviso["titulo"] = "S3 alert: Strong solar radiation storm (NOAA SWPC)"
 			aviso["estado_salida"] = "SUSPENDIDA"
 			
-			_set_estado_salida(ExitRestriction.SUSPENDIDA, "Cruce a nivel S3 (>1000 pfu)")
+			_set_estado_salida(ExitRestriction.SUSPENDIDA, "Reached level S3 (>1000 pfu)")
 			
 			if not _is_player_sheltered:
-				_orden_activa = "«Regresa al refugio»"
+				_orden_activa = "Go to the shelter"
 				if _tiempo_para_refugiarse <= 0.0:
 					_tiempo_para_refugiarse = 45.0
-				aviso["mensaje"] = "«Regresa al refugio»: ¡Cruce de umbral S3 (>1000 pfu)! Regresa de inmediato a la base."
+				aviso["mensaje"] = "The storm reached S3 (>1000 pfu). Go to the shelter now."
 				shelter_order_issued.emit(_orden_activa, false, _tiempo_para_refugiarse)
 			else:
-				_orden_activa = "«Salida suspendida»"
-				aviso["mensaje"] = "«Salida suspendida»: Nivel S3 activo (>1000 pfu). Permanecer dentro del refugio blindado."
+				_orden_activa = "Stay inside"
+				aviso["mensaje"] = "The storm is at S3 (>1000 pfu). Stay in the shelter."
 				shelter_order_issued.emit(_orden_activa, true, 0.0)
 			
 			if has_node("/root/BaseFSM"):
@@ -354,16 +354,16 @@ func _procesar_episodio_octubre_9_10(hito: Dictionary, ep_id: String, tipo_hito:
 			# DEBE actualizar el mismo aviso sin reiniciar el tiempo para regresar
 			_flujo_pfu_actual = float(hito.get("flujo_pfu", 1810.0))
 			aviso["flujo_pfu"] = _flujo_pfu_actual
-			aviso["titulo"] = "PICO S3: Máximo de Radiación Solar de 1,810 pfu (NOAA SWPC)"
+			aviso["titulo"] = "S3 peak: 1,810 pfu (NOAA SWPC)"
 			
 			if not _is_player_sheltered:
-				_orden_activa = "«Regresa al refugio»"
-				aviso["mensaje"] = "«Regresa al refugio»: Flujo pico registrado de 1,810 pfu. ¡Ponte a salvo de inmediato!"
+				_orden_activa = "Go to the shelter"
+				aviso["mensaje"] = "Proton flux peaked at 1,810 pfu. Go to the shelter now."
 				# NOTA CRÍTICA: NO reiniciar _tiempo_para_refugiarse; se conserva el conteo restante
 				shelter_order_issued.emit(_orden_activa, false, _tiempo_para_refugiarse)
 			else:
-				_orden_activa = "«Salida suspendida»"
-				aviso["mensaje"] = "«Salida suspendida»: Flujo pico registrado de 1,810 pfu. Tripulación protegida en el refugio."
+				_orden_activa = "Stay inside"
+				aviso["mensaje"] = "Proton flux peaked at 1,810 pfu. Stay in the shelter."
 				shelter_order_issued.emit(_orden_activa, true, 0.0)
 				
 			_peak_recovery_timer = simulated_alert_duration_after_peak
@@ -374,15 +374,15 @@ func _procesar_episodio_octubre_26_28(hito: Dictionary, ep_id: String, tipo_hito
 	# 26–28 de octubre: Segundo episodio SEP (Pico 364 pfu). Salida restringida.
 	if not _avisos_solares.has(ep_id):
 		var aviso := _crear_estructura_aviso(hito, ep_id)
-		aviso["titulo"] = "ADVERTENCIA: Segundo Evento de Protones Solares (NOAA SWPC)"
-		aviso["mensaje"] = "Aviso de salida restringida: Evento solar moderado en curso. Salir al exterior aumenta la exposición simulada."
+		aviso["titulo"] = "Warning: Second solar proton event (NOAA SWPC)"
+		aviso["mensaje"] = "A moderate solar event is underway. Going outside raises your simulated dose."
 		aviso["estado_salida"] = "RESTRINGIDA"
 		_flujo_pfu_actual = 50.0
 		aviso["flujo_pfu"] = _flujo_pfu_actual
 		_avisos_solares[ep_id] = aviso
 		
-		_set_estado_salida(ExitRestriction.RESTRINGIDA, "Segundo evento SEP en desarrollo")
-		_orden_activa = "Salida restringida"
+		_set_estado_salida(ExitRestriction.RESTRINGIDA, "Second solar particle event underway")
+		_orden_activa = "Limited exit"
 		shelter_order_issued.emit(_orden_activa, _is_player_sheltered, 0.0)
 		solar_notice_posted.emit(aviso)
 	else:
@@ -391,17 +391,17 @@ func _procesar_episodio_octubre_26_28(hito: Dictionary, ep_id: String, tipo_hito
 		if tipo_hito == "pico":
 			_flujo_pfu_actual = float(hito.get("flujo_pfu", 364.0))
 			aviso["flujo_pfu"] = _flujo_pfu_actual
-			aviso["titulo"] = "PICO SEGUNDO EVENTO: Flujo de 364 pfu (NOAA SWPC)"
-			aviso["mensaje"] = "Salida restringida: Flujo máximo de 364 pfu alcanzado. Decida entre esperar o asumir mayor exposición simulada."
+			aviso["titulo"] = "Second event peak: 364 pfu (NOAA SWPC)"
+			aviso["mensaje"] = "Proton flux peaked at 364 pfu. Wait or accept a higher simulated dose."
 			_peak_recovery_timer = simulated_alert_duration_after_peak
 		solar_notice_updated.emit(aviso)
 
 
-func _procesar_episodio_generico(hito: Dictionary, ep_id: String, tipo_hito: String, tipo: String) -> void:
+func _procesar_episodio_generico(hito: Dictionary, ep_id: String, tipo: String) -> void:
 	if not _avisos_solares.has(ep_id):
 		var aviso := _crear_estructura_aviso(hito, ep_id)
-		aviso["titulo"] = "EVENTO SOLAR: %s (%s)" % [tipo, ep_id]
-		aviso["mensaje"] = "Hito %s detectado. Fuente: %s" % [tipo_hito, hito.get("fuente", "")]
+		aviso["titulo"] = "Solar event: %s (%s)" % [tipo, ep_id]
+		aviso["mensaje"] = "Solar event update. Source: %s" % hito.get("fuente", "")
 		_avisos_solares[ep_id] = aviso
 		solar_notice_posted.emit(aviso)
 	else:
@@ -447,7 +447,7 @@ func _actualizar_datos_fuente(aviso: Dictionary, hito: Dictionary) -> void:
 
 func _finalizar_alerta_simulada() -> void:
 	_flujo_pfu_actual = 0.0
-	_set_estado_salida(ExitRestriction.PERMITIDA, "Alerta finalizada (Simulación)")
+	_set_estado_salida(ExitRestriction.PERMITIDA, "Alert ended (simulated)")
 	_orden_activa = ""
 	shelter_order_issued.emit("", _is_player_sheltered, 0.0)
 	
@@ -489,11 +489,11 @@ func is_player_in_shielded_work_zone() -> bool:
 func set_player_sheltered(sheltered: bool) -> void:
 	_is_player_sheltered = sheltered
 	if _is_player_sheltered and _estado_salida == ExitRestriction.SUSPENDIDA:
-		_orden_activa = "«Salida suspendida»"
+		_orden_activa = "Stay inside"
 		_tiempo_para_refugiarse = 0.0
 		shelter_order_issued.emit(_orden_activa, true, 0.0)
 	elif not _is_player_sheltered and _estado_salida == ExitRestriction.SUSPENDIDA:
-		_orden_activa = "«Regresa al refugio»"
+		_orden_activa = "Go to the shelter"
 		shelter_order_issued.emit(_orden_activa, false, _tiempo_para_refugiarse)
 
 
@@ -531,6 +531,15 @@ func get_exit_restriction_name() -> String:
 			return "RESTRINGIDA"
 		_:
 			return "DESCONOCIDO"
+
+
+func get_exit_restriction_label(state: String) -> String:
+	match state:
+		"PERMITIDA": return "Exit open"
+		"VIGILANCIA": return "Caution"
+		"SUSPENDIDA": return "Stay inside"
+		"RESTRINGIDA": return "Limited exit"
+		_: return "Unknown"
 
 
 ## Retorna una lista con todos los avisos solares publicados en el tablero.
@@ -599,11 +608,11 @@ func trigger_event(event_type: StringName, custom_warning_time: float = -1.0) ->
 		EVENT_SOLAR_FLARE:
 			_start_solar_flare_sequence(warning_time)
 		EVENT_MICROMETEORITES:
-			_start_generic_event(event_type, "Alerta: Lluvia de Micrometeoritos en trayectoria", 10.0, 20.0)
+			_start_generic_event(event_type, "Alert: Micrometeoroids approaching", 10.0, 20.0)
 		EVENT_OXYGEN_LEAK:
-			_start_generic_event(event_type, "Peligro: Despresurización y fuga en soporte vital", 8.0, 25.0)
+			_start_generic_event(event_type, "Alert: Life support pressure leak", 8.0, 25.0)
 		_:
-			_start_generic_event(event_type, "Alerta espacial no clasificada", 10.0, 20.0)
+			_start_generic_event(event_type, "Unidentified space alert", 10.0, 20.0)
 
 
 func _start_solar_flare_sequence(warning_time: float) -> void:
@@ -617,8 +626,8 @@ func _start_solar_flare_sequence(warning_time: float) -> void:
 	
 	var warning_data: Dictionary = {
 		"type": EVENT_SOLAR_FLARE,
-		"title": "LLAMARADA SOLAR DETECTADA",
-		"description": "Una eyección de masa coronal se aproxima. Se prevé interferencia y radiación crítica.",
+		"title": "SOLAR FLARE DETECTED",
+		"description": "A solar eruption is approaching. Expect radio interference and high radiation.",
 		"warning_duration": warning_time,
 		"severity": 3
 	}

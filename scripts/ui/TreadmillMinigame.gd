@@ -111,15 +111,15 @@ func _process(delta: float) -> void:
 		var fill_speed: float = (100.0 / target_time_in_green_zone) * delta
 		workout_progress = minf(100.0, workout_progress + fill_speed)
 		if feedback_label:
-			feedback_label.text = "¡ZONA VERDE ÓPTIMA! ¡PROTEGIENDO HUESOS!"
+			feedback_label.text = "Green zone! Keep this pace."
 			feedback_label.modulate = Color(0.2, 1.0, 0.4)
 	elif current_effort > green_zone_max:
 		if feedback_label:
-			feedback_label.text = "¡Demasiado rápido! Reduce un poco el ritmo"
+			feedback_label.text = "Too fast! Slow down a little."
 			feedback_label.modulate = Color(1.0, 0.8, 0.2)
 	else:
 		if feedback_label:
-			feedback_label.text = "¡Pisa con ritmo! Alterna PIE IZQUIERDO y DERECHO"
+			feedback_label.text = "Keep a steady pace. Alternate feet."
 			feedback_label.modulate = Color(0.9, 0.9, 0.9)
 	
 	# 4. Actualizar elementos visuales
@@ -169,7 +169,7 @@ func _handle_footstep(foot: FootStep) -> void:
 		current_effort = maxf(0.0, current_effort - misstep_penalty)
 		_highlight_key(foot, false)
 		if feedback_label:
-			feedback_label.text = "¡Tropiezo! Recuerda alternar un pie tras otro"
+			feedback_label.text = "Stumble! Remember to alternate feet."
 			feedback_label.modulate = Color(1.0, 0.4, 0.4)
 
 # ==============================================================================
@@ -198,12 +198,12 @@ func _finish_minigame(victory: bool) -> void:
 	
 	if victory:
 		if feedback_label:
-			feedback_label.text = "¡SESIÓN COMPLETADA CON ÉXITO! (+45% MASA ÓSEA)"
+			feedback_label.text = "Exercise session complete!"
 			feedback_label.modulate = Color(0.1, 1.0, 0.4)
 		exercise_completed.emit()
 	else:
 		if feedback_label:
-			feedback_label.text = "Tiempo agotado. La atrofia no se detuvo."
+			feedback_label.text = "Time ran out. Try again."
 			feedback_label.modulate = Color(1.0, 0.3, 0.3)
 		exercise_failed.emit()
 	

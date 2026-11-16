@@ -51,7 +51,7 @@ layout_mode = 2
 [node name="TitleLabel" type="Label" parent="MainPanel/MarginContainer/VBoxContainer/HeaderContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
-text = "CENTRO DE CLIMA ESPACIAL (NASA DONKI / NOAA SWPC)"
+text = "SPACE WEATHER CENTER (NASA DONKI / NOAA SWPC)"
 
 [node name="MissionTimeLabel" type="Label" parent="MainPanel/MarginContainer/VBoxContainer/HeaderContainer"]
 layout_mode = 2
@@ -59,7 +59,7 @@ text = "T+ 00:00 / 10:00"
 
 [node name="StatusBadgeLabel" type="Label" parent="MainPanel/MarginContainer/VBoxContainer/HeaderContainer"]
 layout_mode = 2
-text = "[SALIDA: PERMITIDA]"
+text = "[EXIT: OPEN]"
 
 [node name="OrderBannerContainer" type="PanelContainer" parent="MainPanel/MarginContainer/VBoxContainer"]
 visible = false
@@ -77,11 +77,11 @@ layout_mode = 2
 
 [node name="OrderTextLabel" type="Label" parent="MainPanel/MarginContainer/VBoxContainer/OrderBannerContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
-text = "«ORDEN DE MISIÓN»"
+text = "MISSION INSTRUCTIONS"
 
 [node name="OrderDetailLabel" type="Label" parent="MainPanel/MarginContainer/VBoxContainer/OrderBannerContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
-text = "Detalles de la orden de evacuación o suspensión."
+text = "Shelter and exit instructions appear here."
 
 [node name="MetersContainer" type="HBoxContainer" parent="MainPanel/MarginContainer/VBoxContainer"]
 layout_mode = 2
@@ -93,7 +93,7 @@ size_flags_horizontal = 3
 
 [node name="FluxTitleLabel" type="Label" parent="MainPanel/MarginContainer/VBoxContainer/MetersContainer/FluxBox"]
 layout_mode = 2
-text = "Flujo Observado (pfu):"
+text = "Observed proton flux (pfu):"
 
 [node name="FluxValueLabel" type="Label" parent="MainPanel/MarginContainer/VBoxContainer/MetersContainer/FluxBox"]
 layout_mode = 2
@@ -105,7 +105,7 @@ size_flags_horizontal = 3
 
 [node name="DoseTitleLabel" type="Label" parent="MainPanel/MarginContainer/VBoxContainer/MetersContainer/DoseBox"]
 layout_mode = 2
-text = "Exposición Simulada (mSv):"
+text = "Simulated dose (mSv):"
 
 [node name="DoseValueLabel" type="Label" parent="MainPanel/MarginContainer/VBoxContainer/MetersContainer/DoseBox"]
 layout_mode = 2
@@ -117,11 +117,11 @@ size_flags_horizontal = 3
 
 [node name="ShelterTitleLabel" type="Label" parent="MainPanel/MarginContainer/VBoxContainer/MetersContainer/ShelterBox"]
 layout_mode = 2
-text = "Estado del Astronauta:"
+text = "Astronaut status:"
 
 [node name="ShelterStatusLabel" type="Label" parent="MainPanel/MarginContainer/VBoxContainer/MetersContainer/ShelterBox"]
 layout_mode = 2
-text = "En Refugio (Protegido)"
+text = "In shelter (protected)"
 
 [node name="NoticesScroll" type="ScrollContainer" parent="MainPanel/MarginContainer/VBoxContainer"]
 custom_minimum_size = Vector2(0, 200)
@@ -141,9 +141,9 @@ alignment = 1
 [node name="EnterShelterButton" type="Button" parent="MainPanel/MarginContainer/VBoxContainer/ActionsContainer"]
 custom_minimum_size = Vector2(180, 36)
 layout_mode = 2
-text = "Entrar al Refugio"
+text = "Enter shelter"
 
 [node name="ExitExteriorButton" type="Button" parent="MainPanel/MarginContainer/VBoxContainer/ActionsContainer"]
 custom_minimum_size = Vector2(180, 36)
 layout_mode = 2
-text = "Salir al Exterior (EVA)"
+text = "Go outside (EVA)"

@@ -202,10 +202,9 @@ func try_spend_energy(amount: float, system_name: String) -> bool:
 
 
 func format_sols(amount: int) -> String:
-	return "%d %s" % [amount, "sol" if amount == 1 else "soles"]
+	return "%d %s" % [amount, "sol" if amount == 1 else "sols"]
 
 
 func format_shortfall(cost: float) -> String:
 	var missing := maxi(0, ceili(cost - current_energy_watts))
-	var verb := "Te falta" if missing == 1 else "Te faltan"
-	return "%s %s" % [verb, format_sols(missing)]
+	return "You need %s more" % format_sols(missing)

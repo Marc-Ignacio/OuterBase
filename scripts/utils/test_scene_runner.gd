@@ -26,6 +26,7 @@ func _ready() -> void:
 	# 3. DayManager
 	print("[3] Probando DayManager...")
 	DayManager.day_survived.connect(self._on_day_survived)
+	DayManager.start_day()
 	DayManager.time_remaining = 0.2
 	DayManager._process(0.3)
 	assert(survived_emitted, "day_survived() debió ser emitida")

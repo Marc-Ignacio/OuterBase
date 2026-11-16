@@ -178,21 +178,21 @@ func _publish_mission_needs() -> void:
 
 func eat_ration() -> void:
 	if _rations == 0:
-		supply_action_finished.emit("Sin raciones", false)
+		supply_action_finished.emit("No meals left", false)
 		return
 	_rations -= 1
 	replenish_nutrition(RECOVERY_POINTS)
 	supplies_updated.emit(_rations, _drinking_water)
-	supply_action_finished.emit("Ración consumida", true)
+	supply_action_finished.emit("Meal eaten", true)
 	ration_eaten.emit()
 
 
 func drink_water() -> void:
 	if not take_drinking_water():
-		supply_action_finished.emit("Sin agua potable", false)
+		supply_action_finished.emit("No drinking water left", false)
 		return
 	replenish_hygiene(RECOVERY_POINTS)
-	supply_action_finished.emit("Agua consumida", true)
+	supply_action_finished.emit("Water drunk", true)
 	water_drunk.emit()
 
 
@@ -211,33 +211,33 @@ func harvest_ration() -> void:
 
 func recycle_water() -> void:
 	if TaskManager.is_task_active(TaskManager.TASK_CLEAN_O2_FILTERS):
-		supply_action_finished.emit("Repara el tanque H₂O antes de reciclar", false)
+		supply_action_finished.emit("Fix the H₂O tank before recycling", false)
 		return
-	if not _try_spend_energy(RECYCLE_ENERGY_COST, "Reciclar agua"):
+	if not _try_spend_energy(RECYCLE_ENERGY_COST, "Recycle water"):
 		return
 	_drinking_water += 1
 	supplies_updated.emit(_rations, _drinking_water)
-	supply_action_finished.emit("Agua reciclada", true)
+	supply_action_finished.emit("Water recycled", true)
 	water_recycled.emit()
 
 
 func repair_water_tank() -> String:
 	if not TaskManager.is_task_active(TaskManager.TASK_CLEAN_O2_FILTERS):
-		return "H₂O estable"
+		return "H₂O tank OK"
 	if not _try_spend_energy(FILTER_ENERGY_COST, "Reparar tanque H₂O"):
 		return EnergyEconomy.format_shortfall(FILTER_ENERGY_COST)
 	TaskManager.complete_task(TaskManager.TASK_CLEAN_O2_FILTERS)
-	supply_action_finished.emit("H₂O reparado · Reciclaje disponible", true)
-	return "Reparado · Filtro cambiado"
+	supply_action_finished.emit("H₂O tank fixed · Recycling ready", true)
+	return "Tank fixed · Filter replaced"
 
 
 func inspect_or_repair_oxygen_tank() -> String:
 	if not ResourceManager.has_oxygen_leak():
-		return "O₂ estable · %.0f unidades" % ResourceManager.get_resource(ResourceManager.RES_OXYGEN)
+		return "O₂ tank OK · %.0f units" % ResourceManager.get_resource(ResourceManager.RES_OXYGEN)
 	if not _try_spend_energy(FILTER_ENERGY_COST, "Reparar tanque O₂"):
 		return EnergyEconomy.format_shortfall(FILTER_ENERGY_COST)
 	ResourceManager.set_oxygen_leak_active(false)
-	return "O₂ reparado"
+	return "O₂ tank fixed"
 
 
 func _try_spend_energy(cost: float, action: String) -> bool:

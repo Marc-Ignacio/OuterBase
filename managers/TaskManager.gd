@@ -165,9 +165,9 @@ func _on_event_started(event_type: StringName) -> void:
 func _create_initial_routine_tasks() -> void:
 	assign_routine_task(
 		TASK_WATER_PLANTS,
-		"Riega los cultivos",
-		"Pulsa E junto al panel. Usa agua de la base.",
-		"Invernadero"
+		"Water the plants",
+		"Press E at the panel. Water comes from the base supply.",
+		"Greenhouse"
 	)
 	
 	if not _scheduled_filter_maintenance:
@@ -177,9 +177,9 @@ func _create_initial_routine_tasks() -> void:
 func _assign_filter_task() -> void:
 	assign_routine_task(
 		TASK_CLEAN_O2_FILTERS,
-		"Limpiar Filtros de Oxígeno",
-		"Limpia los filtros en el Módulo de Soporte Vital para mejorar la pureza del aire.",
-		"Soporte Vital"
+		"Clean the oxygen filters",
+		"Clean the filters in Life Support to keep the air clean.",
+		"Life support"
 	)
 
 
@@ -190,9 +190,9 @@ func use_scheduled_filter_maintenance() -> void:
 
 
 func assign_water_tank_maintenance() -> void:
-	assign_routine_task(TASK_CLEAN_O2_FILTERS, "Reparar H₂O y cambiar filtro",
-		"Repara la fuga en el tanque de la sala inferior para reanudar el reciclaje.",
-		"Tanque H₂O")
+	assign_routine_task(TASK_CLEAN_O2_FILTERS, "Fix the H₂O tank and replace its filter",
+		"Fix the leak in the lower room to start recycling again.",
+		"H₂O tank")
 
 
 ## Asigna una tarea rutinaria (no urgente).
@@ -225,8 +225,8 @@ func _assign_daily_training(day: int) -> void:
 	_training_last_remaining = DayManager.get_time_remaining()
 	if not _scheduled_filter_maintenance:
 		_assign_filter_task()
-	assign_routine_task(TASK_DAILY_TRAINING, "Entrenamiento diario",
-		"Actividad opcional. Completa tres pulsaciones de ejercicio.", "Terminal")
+	assign_routine_task(TASK_DAILY_TRAINING, "Daily exercise",
+		"Optional. Press Train three times to finish.", "Terminal")
 	training_progress_changed.emit(_training_repetitions, 0)
 
 
@@ -245,12 +245,12 @@ func advance_daily_training() -> void:
 		return
 	if _training_repetitions == -1:
 		_training_repetitions = 0
-		training_result.emit("Entrenamiento iniciado", true)
+		training_result.emit("Exercise started", true)
 	else:
 		_training_repetitions += 1
 		if _training_repetitions == TRAINING_REPETITIONS:
 			complete_task(TASK_DAILY_TRAINING)
-			training_result.emit("Entrenamiento completado", true)
+			training_result.emit("Exercise complete", true)
 	_training_wait = TRAINING_REPETITION_SECONDS if _training_repetitions < TRAINING_REPETITIONS else 0.0
 	_training_last_remaining = DayManager.get_time_remaining()
 	training_progress_changed.emit(_training_repetitions, ceili(_training_wait))
@@ -279,9 +279,9 @@ func assign_emergency_solar_flare_task() -> void:
 		
 	var task := BaseTask.new(
 		TASK_DIVERT_SHIELDS,
-		"EMERGENCIA: Desviar Energía a Escudos",
-		"¡Radiación entrante! Corre al Módulo de Reactores y desvía la energía a los escudos magnéticos.",
-		"Módulo de Reactores",
+		"Emergency: Send power to the shields",
+		"Radiation alert! Go to the reactor room and power the shields.",
+		"Reactor room",
 		true,
 		divert_shields_timeout
 	)

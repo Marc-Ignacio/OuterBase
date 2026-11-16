@@ -23,4 +23,4 @@ func _draw() -> void:
 
 func _on_energy_generated(amount: float, source: String) -> void:
 	if source == "Paneles solares" and floori(amount) > 0:
-		_status.text = "Última recarga · +%s" % EnergyEconomy.format_sols(floori(amount))
+		_status.text = "Last recharge · +%s" % EnergyEconomy.format_sols(floori(amount))

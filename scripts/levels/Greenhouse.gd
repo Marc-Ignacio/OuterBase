@@ -24,23 +24,23 @@ func _ready() -> void:
 
 func interaction_caption() -> String:
 	if TaskManager.is_task_active(TaskManager.TASK_WATER_PLANTS):
-		return "E · Regar cultivos"
+		return "E · Water the plants"
 	if _harvest_ready:
-		return "E · Cosechar"
-	return "E · Sembrar" if _timer.is_stopped() else "Cultivo en curso"
+		return "E · Harvest"
+	return "E · Plant seeds" if _timer.is_stopped() else "Plants growing"
 
 
 func interact(use_drinking_water: Callable = Callable()) -> String:
 	if TaskManager.is_task_active(TaskManager.TASK_WATER_PLANTS):
 		if TaskManager.complete_task(TaskManager.TASK_WATER_PLANTS, use_drinking_water):
-			return "Cultivos regados"
-		return "Falta agua de riego\nRecicla agua en la Terminal y vuelve"
+			return "Plants watered"
+		return "Need water.\nRecycle water at the Terminal and come back."
 	if _harvest_ready:
 		reset_crop()
 		ration_harvested.emit()
-		return "Cosecha · +1 ración"
+		return "Harvest · +1 meal"
 	if not _timer.is_stopped():
-		return "Cultivo en curso"
+		return "Plants growing"
 	var cost := AstronautNeeds.GROW_ENERGY_COST
 	if not EnergyEconomy.try_spend_energy(cost, "Invernadero"):
 		return EnergyEconomy.format_shortfall(cost)
@@ -49,7 +49,7 @@ func interact(use_drinking_water: Callable = Callable()) -> String:
 	_progress.show()
 	set_process(true)
 	_set_status("Cultivando…")
-	return "Cultivo iniciado"
+	return "Seeds planted"
 
 
 func _process(_delta: float) -> void:
@@ -63,7 +63,7 @@ func _on_crop_ready() -> void:
 	_ready_light.color = Color("#66f38a")
 	_progress.hide()
 	set_process(false)
-	_set_status("Cosecha lista")
+	_set_status("Ready to harvest")
 
 
 func reset_crop() -> void:
@@ -74,9 +74,9 @@ func reset_crop() -> void:
 	_ready_light.color = Color("#335244")
 	_progress.hide()
 	set_process(false)
-	_set_status("Ve al invernadero")
+	_set_status("Go to the greenhouse")
 
 
 func _set_status(value: String) -> void:
-	_status.text = "Sembrar · %s" % EnergyEconomy.format_sols(ceili(AstronautNeeds.GROW_ENERGY_COST)) if value == "Ve al invernadero" else value
+	_status.text = "Plant seeds · %s" % EnergyEconomy.format_sols(ceili(AstronautNeeds.GROW_ENERGY_COST)) if value == "Go to the greenhouse" else value
 	crop_status_changed.emit(value)

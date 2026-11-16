@@ -116,11 +116,11 @@ func _ready() -> void:
 	_solar_help_button = _add_supply_button(title_row, "?", _toggle_solar_help)
 	_solar_help_button.size_flags_horizontal = Control.SIZE_FILL
 	_solar_help_button.custom_minimum_size = Vector2(32, 24)
-	_solar_help_button.tooltip_text = "Ayuda de Alertas del Sol"
+	_solar_help_button.tooltip_text = "Help with Sun Alerts"
 	var details_row := HBoxContainer.new()
 	alerts_column.add_child(details_row)
 	alerts_column.move_child(details_row, 1)
-	_solar_details_button = _add_supply_button(details_row, "Ver detalles", _toggle_solar_details)
+	_solar_details_button = _add_supply_button(details_row, "View details", _toggle_solar_details)
 	_connect_managers()
 	EnergyEconomy.energy_updated.connect(_update_energy_display)
 	ResourceManager.resource_updated.connect(func(resource: StringName, _amount: float):
@@ -149,7 +149,7 @@ func setup_life_support(recycle_cost: float) -> void:
 	section.name = "LifeSupport"
 	body.add_child(section)
 	body.move_child(section, body.get_node("HSeparator2").get_index())
-	section.add_child(_create_styled_label("=== [ SOPORTE VITAL ] ===", COLOR_PHOSPHOR_BRIGHT, 12))
+	section.add_child(_create_styled_label("=== [ LIFE SUPPORT ] ===", COLOR_PHOSPHOR_BRIGHT, 12))
 	_life_support_controls = VBoxContainer.new()
 	section.add_child(_life_support_controls)
 	var columns := HBoxContainer.new()
@@ -164,8 +164,8 @@ func setup_life_support(recycle_cost: float) -> void:
 	_satiety_bar = _add_needs_bar(food)
 	var food_actions := HBoxContainer.new()
 	food.add_child(food_actions)
-	_add_supply_button(food_actions, "Comer", eat_requested.emit)
-	_crop_status = _create_styled_label("Ve al invernadero", COLOR_PHOSPHOR_BRIGHT, 11)
+	_add_supply_button(food_actions, "Eat", eat_requested.emit)
+	_crop_status = _create_styled_label("Go to the greenhouse", COLOR_PHOSPHOR_BRIGHT, 11)
 	_crop_status.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	food_actions.add_child(_crop_status)
 
@@ -175,14 +175,14 @@ func setup_life_support(recycle_cost: float) -> void:
 	_water_label = _create_styled_label("", COLOR_PHOSPHOR_GREEN, 12)
 	water.add_child(_water_label)
 	_hydration_bar = _add_needs_bar(water)
-	_recycle_button = _add_supply_buttons(water, "Beber", drink_requested,
-		"Reciclar agua", recycle_cost, recycle_requested)
+	_recycle_button = _add_supply_buttons(water, "Drink", drink_requested,
+		"Recycle water", recycle_cost, recycle_requested)
 
 	var maintenance := HBoxContainer.new()
 	_life_support_controls.add_child(maintenance)
-	_train_button = _add_supply_button(maintenance, "Entrenar", train_requested.emit)
-	_report_button = _add_supply_button(maintenance, "Enviar mensaje", report_requested.emit)
-	_add_supply_button(maintenance, "ⓘ Ficha NASA", _show_support_notes)
+	_train_button = _add_supply_button(maintenance, "Train", train_requested.emit)
+	_report_button = _add_supply_button(maintenance, "Send message", report_requested.emit)
+	_add_supply_button(maintenance, "ⓘ NASA notes", _show_support_notes)
 
 	var tanks := HBoxContainer.new()
 	_life_support_controls.add_child(tanks)
@@ -207,9 +207,9 @@ func setup_life_support(recycle_cost: float) -> void:
 	var missions_column := missions_vbox.get_parent().get_parent()
 	missions_column.add_child(_daily_objectives)
 	missions_column.move_child(_daily_objectives, 1)
-	_finish_day_button = _add_supply_button(day_actions, "Cerrar día", finish_day_requested.emit)
-	_next_day_button = _add_supply_button(day_actions, "Siguiente día", next_day_requested.emit)
-	_retry_day_button = _add_supply_button(day_actions, "Reintentar", retry_day_requested.emit)
+	_finish_day_button = _add_supply_button(day_actions, "End day", finish_day_requested.emit)
+	_next_day_button = _add_supply_button(day_actions, "Next day", next_day_requested.emit)
+	_retry_day_button = _add_supply_button(day_actions, "Try again", retry_day_requested.emit)
 	for button in [_finish_day_button, _next_day_button, _retry_day_button]:
 		button.custom_minimum_size.x = 170
 		button.size_flags_horizontal = Control.SIZE_FILL
@@ -225,32 +225,32 @@ func update_daily_objectives(water_restored: bool, water_repaired: bool, report_
 func _refresh_objective_text() -> void:
 	if not is_instance_valid(_daily_objectives):
 		return
-	var water := "Espera el aviso de fuga."
+	var water := "Watch for a leak alert."
 	if _water_restored:
-		water = "Ya tienes agua para beber."
+		water = "Drinking water is ready."
 	elif _water_leaking:
-		water = "Ve al tanque de agua (H₂O) en la sala inferior y pulsa E."
+		water = "Go to the H₂O tank in the lower room and press E."
 		if not EnergyEconomy.can_afford_energy(AstronautNeeds.FILTER_ENERGY_COST):
-			water = "%s para reparar el tanque de agua (H₂O); espera la recarga." % EnergyEconomy.format_shortfall(AstronautNeeds.FILTER_ENERGY_COST)
+			water = "%s to fix the H₂O tank. Wait for a recharge." % EnergyEconomy.format_shortfall(AstronautNeeds.FILTER_ENERGY_COST)
 	elif _water_repaired:
-		water = "Pulsa Reciclar agua en la Terminal."
+		water = "Select Recycle water in the Terminal."
 		if not EnergyEconomy.can_afford_energy(AstronautNeeds.RECYCLE_ENERGY_COST):
-			water = "%s para Reciclar agua; espera la recarga." % EnergyEconomy.format_shortfall(AstronautNeeds.RECYCLE_ENERGY_COST)
-	var radio := "Pulsa Enviar mensaje."
+			water = "%s to recycle water. Wait for a recharge." % EnergyEconomy.format_shortfall(AstronautNeeds.RECYCLE_ENERGY_COST)
+	var radio := "Select Send message."
 	if _report_confirmed:
-		radio = "Tierra confirmó el mensaje."
-	elif _radio_status == "Enlace inestable":
-		radio = "La radio falla por momentos. Espera a que se recupere."
-	elif _radio_status == "Bloqueadas":
-		radio = "Ve a la radio (Panel COM) y pulsa E para reiniciarla."
-	elif _radio_status == "Enviando a Tierra…":
-		radio = "Esperando respuesta de Tierra…"
-	_daily_objectives.text = "%s Consigue agua para beber\n%s\n\n%s Envía un mensaje a Tierra\n%s" % [
+		radio = "Message confirmed."
+	elif _radio_status == "Radio signal weak":
+		radio = "The radio keeps cutting out. Wait for the signal."
+	elif _radio_status == "Offline":
+		radio = "Go to the radio (COM panel) and press E."
+	elif _radio_status == "Sending to Earth…":
+		radio = "Waiting for Earth to reply…"
+	_daily_objectives.text = "%s Get drinking water\n%s\n\n%s Send a message to Earth\n%s" % [
 		"✓" if _water_restored else "○", water, "✓" if _report_confirmed else "○", radio]
 
 
 func show_open_day(day: int) -> void:
-	_finish_day_button.text = "Cerrar día %d" % day
+	_finish_day_button.text = "End day %d" % day
 	_life_support_controls.show()
 	_life_support_result.text = " "
 	_day_result.hide()
@@ -263,11 +263,11 @@ func show_closed_day(pending: PackedStringArray, refuge_seconds: float, trained:
 	var success := pending.is_empty()
 	_life_support_controls.hide()
 	_finish_day_button.hide()
-	_day_result.text = "Misión cumplida" if success else (
-		"Faltó %s." % ", ".join(pending))
+	_day_result.text = "Mission complete" if success else (
+		"Still to do: %s." % ", ".join(pending))
 	if trained:
-		_day_result.text += "\n★ Insignia de ejercicio"
-	_day_result.text += "\nTiempo en refugio durante la tormenta · %.1f s. ¿Qué prepararías antes de la próxima tormenta?" % refuge_seconds
+		_day_result.text += "\n★ Exercise badge"
+	_day_result.text += "\nTime in shelter during the storm: %.1f s. What would you prepare for the next storm?" % refuge_seconds
 	_day_result.modulate = COLOR_PHOSPHOR_BRIGHT if success else COLOR_ALERT_YELLOW
 	_day_result.show()
 	_next_day_button.visible = success
@@ -276,26 +276,26 @@ func show_closed_day(pending: PackedStringArray, refuge_seconds: float, trained:
 
 func update_filter_status(needs_service: bool) -> void:
 	_water_leaking = needs_service
-	_water_tank_status.text = "⚠ Tanque de agua · Fuga" if needs_service else "◆ Tanque de agua · Bien"
+	_water_tank_status.text = "⚠ Water tank · Leak" if needs_service else "◆ Water tank · OK"
 	_water_tank_status.modulate = COLOR_ALERT_YELLOW if needs_service else COLOR_PHOSPHOR_GREEN
 	_recycle_button.disabled = needs_service
-	_recycle_button.tooltip_text = "Repara el tanque de agua antes de reciclar" if needs_service else ""
+	_recycle_button.tooltip_text = "Fix the water tank first" if needs_service else ""
 	_refresh_objective_text()
 	_update_watering_hint()
 
 
 func update_oxygen_tank(active_leak: bool, _amount: float) -> void:
-	_oxygen_tank_status.text = "⚠ Tanque de oxígeno · Fuga" if active_leak else "◈ Tanque de oxígeno · Bien"
+	_oxygen_tank_status.text = "⚠ Oxygen tank · Leak" if active_leak else "◈ Oxygen tank · OK"
 	_oxygen_tank_status.modulate = COLOR_ALERT_YELLOW if active_leak else COLOR_PHOSPHOR_GREEN
 
 
 func update_communications(status: String, can_report: bool) -> void:
 	_radio_status = status
-	var caption := "Radio lista"
+	var caption := "Radio ready"
 	match status:
-		"Enlace inestable": caption = "La radio falla por momentos"
-		"Bloqueadas": caption = "Radio averiada"
-		"Enviando a Tierra…": caption = "Esperando respuesta de Tierra…"
+		"Radio signal weak": caption = "Radio cutting out"
+		"Offline": caption = "Radio offline"
+		"Sending to Earth…": caption = "Waiting for Earth to reply…"
 	_communications_status.text = caption
 	_communications_status.modulate = COLOR_PHOSPHOR_GREEN if can_report else COLOR_ALERT_YELLOW
 	_report_button.disabled = not can_report
@@ -314,7 +314,7 @@ func setup_command_shield(cost: int) -> void:
 	_shield_button.custom_minimum_size.x = 296
 	_shield_button.size_flags_horizontal = Control.SIZE_FILL
 	var explanation := _create_styled_label(
-		"Los motores colocan los paneles. Los paneles reducen la exposición.",
+		"Motors move panels into place. The panels reduce radiation exposure.",
 		COLOR_PHOSPHOR_BRIGHT, 11)
 	explanation.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_shield_row.add_child(explanation)
@@ -323,9 +323,9 @@ func setup_command_shield(cost: int) -> void:
 func update_command_shield(storm_active: bool, deployed: bool) -> void:
 	_shield_row.visible = storm_active
 	_shield_button.disabled = deployed
-	_shield_button.text = "Zona blindada · Centro de mando" if deployed else (
-		"Desplegar blindaje (%s)" % EnergyEconomy.format_sols(_shield_cost))
-	_shield_button.tooltip_text = "Costo simulado · Protege esta sala durante S3"
+	_shield_button.text = "Shielded zone · Command center" if deployed else (
+		"Deploy shields (%s)" % EnergyEconomy.format_sols(_shield_cost))
+	_shield_button.tooltip_text = "Simulated cost · Shields this room during S3"
 
 
 func update_crop_status(status: String) -> void:
@@ -336,30 +336,30 @@ func update_training_progress(repetitions: int, wait_seconds: int) -> void:
 	var target := TaskManager.TRAINING_REPETITIONS
 	_train_button.disabled = repetitions >= target or wait_seconds > 0
 	if repetitions < 0:
-		_train_button.text = "↗ Entrenar · Opcional"
+		_train_button.text = "↗ Train · Optional"
 	elif repetitions < target:
 		_train_button.text = "↗ %d/%d · %s" % [repetitions, target,
-			"Espera %d s" % wait_seconds if wait_seconds > 0 else "Pulsar"]
+			"Wait %d s" % wait_seconds if wait_seconds > 0 else "Press"]
 	else:
-		_train_button.text = "✓ Entrenamiento %d/%d" % [repetitions, target]
+		_train_button.text = "✓ Exercise %d/%d" % [repetitions, target]
 
 
 func _show_support_notes() -> void:
 	if not _support_notes:
 		_support_notes = AcceptDialog.new()
-		_support_notes.title = "Soporte vital · Ficha NASA"
+		_support_notes.title = "Life support · NASA notes"
 		_support_notes.ok_button_text = "Cerrar"
 		var notes := RichTextLabel.new()
 		notes.custom_minimum_size = Vector2(425, 0)
 		notes.fit_content = true
 		notes.bbcode_enabled = true
 		notes.text = (
-			"[b]Ejercicio[/b]\nEntrenar ayuda a cuidar los músculos y huesos en el espacio.\n"
-			+ "OSD-684 estudió tejido muscular humano en chips enviados a la ISS.\n"
-			+ "Los costos y la duración del entrenamiento son de balance del juego.\n"
+			"[b]Exercise[/b]\nExercise helps keep your muscles and bones strong in space.\n"
+			+ "OSD-684 studied human muscle tissue on chips sent to the ISS.\n"
+			+ "Game rules set the cost and length of training.\n"
 			+ "[url=%s]NASA Astronaut Exercise[/url] · [url=%s]NASA OSDR, OSD-684[/url]\n\n" % [NASA_EXERCISE, NASA_OSD_684]
-			+ "[b]Reciclaje de agua[/b]\nLa ISS recupera agua con su sistema de soporte vital.\n"
-			+ "[url=%s]NASA · Recuperación de agua en la ISS[/url]" % NASA_WATER
+			+ "[b]Water recycling[/b]\nThe ISS life-support system recovers water.\n"
+			+ "[url=%s]NASA · Water recovery on the ISS[/url]" % NASA_WATER
 		)
 		notes.meta_clicked.connect(func(url: Variant): OS.shell_open(str(url)))
 		_support_notes.add_child(notes)
@@ -421,8 +421,8 @@ func update_life_support_supplies(rations: int, drinking_water: int) -> void:
 
 
 func _update_life_support_labels() -> void:
-	_rations_label.text = "🍴 Alimentación %.0f/100  ·  Raciones %d" % [_satiety_bar.value, _rations]
-	_water_label.text = "💧 Agua en tu cuerpo %.0f/100  ·  Para beber %d" % [_hydration_bar.value, _drinking_water]
+	_rations_label.text = "🍴 Food %.0f/100 · Meals %d" % [_satiety_bar.value, _rations]
+	_water_label.text = "💧 Hydration %.0f/100 · Drinks %d" % [_hydration_bar.value, _drinking_water]
 
 
 func _update_needs_bar(bar: ProgressBar, current: float) -> void:
@@ -534,7 +534,7 @@ func _update_energy_display(balance: float, capacity: float) -> void:
 	var charge := EnergyEconomy.format_sols(EnergyEconomy.get_solar_recharge_sols())
 	energy_label.text = "☀ %s · +%s / %d s" % [
 		EnergyEconomy.format_sols(floori(balance)), charge, EnergyEconomy.SOLAR_INTERVAL_SECONDS]
-	energy_label.tooltip_text = "Paneles solares · Capacidad %s" % EnergyEconomy.format_sols(floori(capacity))
+	energy_label.tooltip_text = "Solar panels · Capacity %s" % EnergyEconomy.format_sols(floori(capacity))
 	_refresh_objective_text()
 	_update_watering_hint()
 
@@ -543,16 +543,12 @@ func _update_header() -> void:
 	if not header_title_label:
 		return
 	
-	var em_status: String = "EN LÍNEA"
+	var em_status: String = "ONLINE"
 	if has_node("/root/EventManager"):
 		var em = get_node("/root/EventManager")
 		em_status = em.get_exit_restriction_name()
 	if status_badge_label:
-		match em_status:
-			"VIGILANCIA": status_badge_label.text = "Atención"
-			"SUSPENDIDA": status_badge_label.text = "Salida cerrada"
-			"RESTRINGIDA": status_badge_label.text = "Salida limitada"
-			_: status_badge_label.text = "Salida permitida"
+		status_badge_label.text = EventManager.get_exit_restriction_label(em_status)
 		if em_status == "SUSPENDIDA":
 			status_badge_label.modulate = COLOR_ALERT_RED
 		elif em_status == "RESTRINGIDA" or em_status == "VIGILANCIA":
@@ -580,11 +576,11 @@ func _populate_tasks() -> void:
 			return task.get("id") not in [TaskManager.TASK_DAILY_TRAINING,
 				TaskManager.TASK_REPAIR_COMMUNICATIONS, TaskManager.TASK_CLEAN_O2_FILTERS])
 	if not TaskManager.is_task_active(TaskManager.TASK_WATER_PLANTS):
-		missions_vbox.add_child(_create_styled_label("✓ Cultivos regados · Invernadero", COLOR_PHOSPHOR_BRIGHT, 12))
+		missions_vbox.add_child(_create_styled_label("✓ Plants watered · Greenhouse", COLOR_PHOSPHOR_BRIGHT, 12))
 		
 	if tasks.is_empty():
 		var empty_lbl = _create_styled_label(
-			"No hay tareas pendientes.",
+			"All tasks done.",
 			COLOR_PHOSPHOR_DIM,
 			11
 		)
@@ -612,10 +608,10 @@ func _create_task_entry(task: Dictionary) -> PanelContainer:
 	
 	var is_urgent: bool = task.get("is_urgent", false)
 	var title_prefix = "[!] " if is_urgent else "• "
-	var title_text = "%s%s · %s" % [title_prefix, task.get("title", "Tarea sin nombre"),
+	var title_text = "%s%s · %s" % [title_prefix, task.get("title", "Task"),
 		task.get("target_location", "Base")]
 	if task.get("id") == TaskManager.TASK_WATER_PLANTS:
-		title_text = "• Riega las plantas · Invernadero"
+		title_text = "• Water the plants · Greenhouse"
 	var title_color = COLOR_ALERT_YELLOW if is_urgent else COLOR_PHOSPHOR_BRIGHT
 	var title_lbl = _create_styled_label(title_text, title_color, 12, true)
 	vbox.add_child(title_lbl)
@@ -646,19 +642,19 @@ func _update_watering_hint() -> void:
 	if task == null:
 		return
 	if ResourceManager.get_resource(ResourceManager.RES_WATER) >= task.water_cost or _drinking_water > 0:
-		_watering_hint.text = "Ve al panel del Invernadero y pulsa E para «Regar cultivos»."
+		_watering_hint.text = "Go to the Greenhouse panel and press E to water."
 	elif _water_leaking:
-		_watering_hint.text = "Falta agua para regar. Repara el tanque (H₂O) y pulsa Reciclar agua."
+		_watering_hint.text = "Need water. Fix the H₂O tank, then select Recycle water."
 	elif not EnergyEconomy.can_afford_energy(AstronautNeeds.RECYCLE_ENERGY_COST):
-		_watering_hint.text = "Falta agua para regar. %s para Reciclar agua." % EnergyEconomy.format_shortfall(AstronautNeeds.RECYCLE_ENERGY_COST)
+		_watering_hint.text = "Need water. %s to recycle it." % EnergyEconomy.format_shortfall(AstronautNeeds.RECYCLE_ENERGY_COST)
 	else:
-		_watering_hint.text = "Falta agua para regar. Pulsa Reciclar agua y vuelve al Invernadero."
+		_watering_hint.text = "Select Recycle water, then return to the Greenhouse."
 
 
 func _update_task_timer(id: StringName, remaining: float, _total: float) -> void:
 	var label: Label = _task_timers.get(id)
 	if _is_open and is_instance_valid(label):
-		var caption := "Tiempo límite · %d s" % ceili(remaining)
+		var caption := "Time limit · %d s" % ceili(remaining)
 		if label.text != caption:
 			label.text = caption
 		label.modulate = COLOR_ALERT_RED if remaining < 10.0 else COLOR_ALERT_YELLOW
@@ -666,7 +662,7 @@ func _update_task_timer(id: StringName, remaining: float, _total: float) -> void
 
 func _populate_events() -> void:
 	_update_header()
-	_solar_details_button.text = "Volver a alertas" if _show_solar_details or _show_solar_help else "Ver detalles"
+	_solar_details_button.text = "Back to alerts" if _show_solar_details or _show_solar_help else "View details"
 	telemetry_label.get_parent().visible = _show_solar_details
 	
 	if not notices_vbox:
@@ -712,11 +708,11 @@ func _toggle_solar_help() -> void:
 
 func _add_solar_help() -> void:
 	for phrase: String in [
-		"Soles · Son la energía guardada en la batería de la base.",
-		"Panel COM · Es la radio que conecta la base con Tierra.",
-		"Llamarada solar · Es un destello del Sol que puede interrumpir la radio.",
-		"Tormenta solar · Partículas del Sol pueden llegar a la base y hacer que necesites protección.",
-		"Blindaje · Son paneles que ayudan a protegerte en el centro de mando.",
+		"Sols are the energy stored in the base battery.",
+		"The COM panel is the radio that connects you to Earth.",
+		"A solar flare is a flash from the Sun that can disrupt the radio.",
+		"A solar storm can send particles from the Sun toward the base.",
+		"Shield panels help protect you in the command center.",
 	]:
 		notices_vbox.add_child(_create_styled_label(phrase, COLOR_PHOSPHOR_BRIGHT, 12))
 
@@ -738,19 +734,19 @@ func _update_telemetry() -> void:
 		exit_state = em.get_exit_restriction_name()
 		is_sheltered = em.is_player_sheltered()
 		
-	var shelter_desc := "Fuera del refugio"
+	var shelter_desc := "Outside shelter"
 	if is_sheltered:
-		shelter_desc = "En refugio"
+		shelter_desc = "In shelter"
 	elif EventManager.is_player_in_shielded_work_zone():
-		shelter_desc = "Zona blindada"
+		shelter_desc = "Shielded zone"
 	
 	var telemetry_text = (
-		"%s\n\nSalida · %s   |   %s\n" +
-		"Flujo · %.1f pfu | Dosis simulada · %.4f mSv\n" +
-		"Tasa simulada · %.4f mSv/s"
+		"%s\n\nExit · %s   |   %s\n" +
+		"Proton flux · %.1f pfu | Simulated dose · %.4f mSv\n" +
+		"Simulated dose rate · %.4f mSv/s"
 	) % [
 		_alert_summary,
-		exit_state,
+		EventManager.get_exit_restriction_label(exit_state),
 		shelter_desc,
 		flux_pfu,
 		dose_msv,
@@ -770,7 +766,7 @@ func _update_telemetry() -> void:
 
 
 func _refresh_alert_summary() -> void:
-	_alert_summary = "No hay alertas del Sol.\nSigue con tus tareas." if _latest_notice.is_empty() else _solar_summary(_latest_notice)
+	_alert_summary = "No Sun alerts.\nKeep working on your tasks." if _latest_notice.is_empty() else _solar_summary(_latest_notice)
 	if is_instance_valid(_alert_label) and _alert_label.text != _alert_summary:
 		_alert_label.text = _alert_summary
 
@@ -796,25 +792,25 @@ func _create_notice_entry(notice: Dictionary) -> PanelContainer:
 func _solar_summary(notice: Dictionary) -> String:
 	match str(notice.get("tipo", "")):
 		"FLR":
-			if _radio_status == "Enlace inestable":
-				return "Llamarada solar: la radio falla por momentos.\nEspera a que se recupere."
-			return "Hubo una llamarada solar.\nSigue con tus tareas."
+			if _radio_status == "Radio signal weak":
+				return "Solar flare: the radio is cutting out.\nWait for the signal to return."
+			return "A solar flare occurred.\nKeep working on your tasks."
 		"SEP":
 			if EventManager.get_exit_restriction_name() == "SUSPENDIDA":
 				if EventManager.is_player_sheltered():
-					return "Tormenta solar.\nQuédate en el refugio."
+					return "Solar storm.\nStay in the shelter."
 				if EventManager.is_player_in_shielded_work_zone():
-					return "Tormenta solar.\nSigue con tus tareas en el centro de mando."
-				return "Tormenta solar.\nVe al refugio, abajo del centro de mando."
-			return "Hubo una tormenta solar.\nRevisa si puedes salir de la base."
-	return "Hay un aviso del Sol.\nPulsa Ver detalles."
+					return "Solar storm.\nKeep working in the command center."
+				return "Solar storm.\nEnter the shelter by the O₂ tank."
+			return "A solar storm occurred.\nCheck if it's safe to go outside."
+	return "New Sun alert.\nSelect View details."
 
 
 func _add_solar_details(card: VBoxContainer, notice: Dictionary) -> void:
-	var title := "Aviso solar"
+	var title := "Sun alert"
 	match str(notice.get("tipo", "")):
-		"FLR": title = "Llamarada solar"
-		"SEP": title = "Tormenta de partículas solares"
+		"FLR": title = "Solar flare"
+		"SEP": title = "Solar particle storm"
 	card.add_child(_create_styled_label(title, COLOR_ALERT_YELLOW, 13))
 	card.add_child(_create_styled_label(_solar_summary(notice), COLOR_PHOSPHOR_BRIGHT, 11))
 	var meta := PackedStringArray()
@@ -824,11 +820,11 @@ func _add_solar_details(card: VBoxContainer, notice: Dictionary) -> void:
 			match field:
 				"fecha_utc": meta.append("%s UTC" % value.trim_suffix("Z"))
 				"fuente": meta.append(value)
-				"clase": meta.append("Clase %s" % value)
-				"nivel": meta.append("Nivel %s" % value)
+				"clase": meta.append("Class %s" % value)
+				"nivel": meta.append("Level %s" % value)
 	var flux := float(notice.get("flujo_pfu", 0.0))
 	if flux > 0.0:
-		meta.append("Flujo %.1f pfu" % flux)
+		meta.append("Proton flux %.1f pfu" % flux)
 	var source_label := _create_styled_label(" · ".join(meta), COLOR_PHOSPHOR_DIM, 11)
 	source_label.tooltip_text = str(notice.get("url_fuente", ""))
 	card.add_child(source_label)
@@ -850,4 +846,4 @@ func _on_day_time_updated(current_seconds: float, _total_day: float) -> void:
 		return
 	var remaining := ceili(current_seconds)
 	var minutes := floori(remaining / 60.0)
-	mission_clock_label.text = "Quedan %02d:%02d" % [minutes, remaining % 60]
+	mission_clock_label.text = "Time left %02d:%02d" % [minutes, remaining % 60]

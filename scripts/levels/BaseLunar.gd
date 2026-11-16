@@ -47,12 +47,12 @@ const DEMO_TIME_MULTIPLIER := 2.0
 const WATER_LEAK_SECOND := 25.0 * DEMO_TIME_MULTIPLIER
 const DEVICE_LABELS := {
 	DEVICE_TERMINAL: "Terminal",
-	DEVICE_GREENHOUSE: "Invernadero",
-	DEVICE_WATER: DEVICE_WATER,
-	DEVICE_OXYGEN: DEVICE_OXYGEN,
-	DEVICE_COMMUNICATIONS: DEVICE_COMMUNICATIONS,
-	REFUGE_ZONE: "Bajar al refugio",
-	DEVICE_SHELTER_EXIT: "Subir a la base",
+	DEVICE_GREENHOUSE: "Greenhouse",
+	DEVICE_WATER: "H₂O tank",
+	DEVICE_OXYGEN: "O₂ tank",
+	DEVICE_COMMUNICATIONS: "COM panel",
+	REFUGE_ZONE: "Enter shelter",
+	DEVICE_SHELTER_EXIT: "Return to base",
 }
 
 var _in_terminal_area: bool = false
@@ -223,7 +223,7 @@ func _deploy_command_shield() -> void:
 		return
 	_shield_deployed = true
 	_update_command_shield()
-	terminal_screen.show_life_support_result("Zona blindada · Centro de mando", true)
+	terminal_screen.show_life_support_result("Shielded zone · Command center", true)
 
 
 func _on_shield_restriction_changed(state: String, _reason: String) -> void:
@@ -251,10 +251,10 @@ func _update_daily_objectives() -> void:
 func _show_day_result() -> void:
 	var pending := PackedStringArray()
 	if not _water_restored:
-		pending.append("reciclar agua potable" if _water_repaired_today else
-			"reparar H₂O y reciclar agua potable")
+		pending.append("recycle drinking water" if _water_repaired_today else
+			"fix the H₂O tank and recycle water")
 	if not _report_confirmed:
-		pending.append("confirmar el reporte con Tierra")
+		pending.append("get a reply from Earth")
 	_day_succeeded = pending.is_empty()
 	terminal_screen.show_closed_day(pending, _refuge_seconds, _trained_today)
 	open_terminal()
@@ -396,9 +396,9 @@ func _process(_delta: float) -> void:
 		var marker: Node2D = _nearby_devices[device]
 		var message := "E · %s" % DEVICE_LABELS[device]
 		if device == DEVICE_WATER and _filter_pending:
-			message = "⚠ E · Reparar H₂O (%s)" % EnergyEconomy.format_sols(ceili(AstronautNeeds.FILTER_ENERGY_COST))
+			message = "⚠ E · Fix H₂O tank (%s)" % EnergyEconomy.format_sols(ceili(AstronautNeeds.FILTER_ENERGY_COST))
 		elif device == DEVICE_OXYGEN and ResourceManager.has_oxygen_leak():
-			message = "⚠ E · Reparar O₂ (%s)" % EnergyEconomy.format_sols(ceili(AstronautNeeds.FILTER_ENERGY_COST))
+			message = "⚠ E · Fix O₂ tank (%s)" % EnergyEconomy.format_sols(ceili(AstronautNeeds.FILTER_ENERGY_COST))
 		elif device == DEVICE_COMMUNICATIONS:
 			message = communications.interaction_caption()
 		elif device == DEVICE_GREENHOUSE:

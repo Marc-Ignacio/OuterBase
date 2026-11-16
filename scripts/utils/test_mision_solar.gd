@@ -24,6 +24,7 @@ func _ready() -> void:
 	
 	# Asegurar escala de misión a 600 segundos (10 minutos)
 	DayManager.set_day_duration(600.0)
+	DayManager.start_day()
 	EventManager.use_solar_calendar = true
 	
 	# Conectar escuchas para pruebas

@@ -68,21 +68,21 @@ layout_mode = 2
 layout_mode = 2
 size_flags_horizontal = 3
 autowrap_mode = 3
-text = "OUTERBASE · CENTRO DE MANDO"
+text = "OUTERBASE · COMMAND CENTER"
 
 [node name="ClockLabel" type="Label" parent="ScreenFrame/MarginContainer/VBox/Header"]
 layout_mode = 2
-text = "Quedan 00:00"
+text = "Time left 00:00"
 
 [node name="EnergyLabel" type="Label" parent="ScreenFrame/MarginContainer/VBox/Header"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.95, 0.9, 0.52, 1)
 theme_override_font_sizes/font_size = 13
-text = "Energía · 0 soles"
+text = "Power · 0 sols"
 
 [node name="StatusBadgeLabel" type="Label" parent="ScreenFrame/MarginContainer/VBox/Header"]
 layout_mode = 2
-text = "Salida permitida"
+text = "Exit open"
 
 [node name="HSeparator1" type="ColorRect" parent="ScreenFrame/MarginContainer/VBox"]
 custom_minimum_size = Vector2(0, 2)
@@ -102,7 +102,7 @@ theme_override_constants/separation = 4
 [node name="MissionsHeader" type="Label" parent="ScreenFrame/MarginContainer/VBox/MainSplit/MissionsColumn"]
 layout_mode = 2
 autowrap_mode = 3
-text = "QUÉ HACER"
+text = "WHAT TO DO"
 
 [node name="MissionsScroll" type="ScrollContainer" parent="ScreenFrame/MarginContainer/VBox/MainSplit/MissionsColumn"]
 layout_mode = 2
@@ -122,7 +122,7 @@ theme_override_constants/separation = 4
 [node name="EventsHeader" type="Label" parent="ScreenFrame/MarginContainer/VBox/MainSplit/EventsColumn"]
 layout_mode = 2
 autowrap_mode = 3
-text = "Alertas del Sol"
+text = "Sun Alerts"
 
 [node name="TelemetryBox" type="PanelContainer" parent="ScreenFrame/MarginContainer/VBox/MainSplit/EventsColumn"]
 layout_mode = 2
@@ -131,7 +131,7 @@ theme_override_styles/panel = SubResource("StyleBoxFlat_telemetry")
 [node name="TelemetryLabel" type="Label" parent="ScreenFrame/MarginContainer/VBox/MainSplit/EventsColumn/TelemetryBox"]
 layout_mode = 2
 autowrap_mode = 3
-text = "CARGANDO TELEMETRÍA..."
+text = "LOADING…"
 
 [node name="NoticesScroll" type="ScrollContainer" parent="ScreenFrame/MarginContainer/VBox/MainSplit/EventsColumn"]
 layout_mode = 2
@@ -155,4 +155,4 @@ layout_mode = 2
 layout_mode = 2
 size_flags_horizontal = 3
 autowrap_mode = 3
-text = "[E] / [ESC] Cerrar terminal"
+text = "[E] / [ESC] Close terminal"

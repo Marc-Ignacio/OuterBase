@@ -5,7 +5,7 @@
 # Archivos específicos de Godot 3 (por si acaso)
 .import/
 export.cfg
-export_presets.cfg
+/build/
 
 # Traducciones importadas (se regeneran desde los CSV)
 *.translation
@@ -23,4 +23,5 @@ desktop.ini
 
 # Ignorar contextos de IA y configuraciones locales
 AGENTS.local.md
+/override.cfg
 
